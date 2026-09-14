@@ -117,11 +117,11 @@ export default function ReportsPage() {
 
   // Export CSV Action
   const handleExportCSV = () => {
-    const headers = 'ID,Organization,Contact,LTV,TotalPaid,Projects\n';
+    const headers = 'ID,Organization,Contact,Tier,LTV,TotalPaid,Projects\n';
     const rows = effectiveClients
       .map(
         (c) =>
-          `"${c.id}","${c.organizationName}","${c.primaryContactName}","${c.totalLtv}","${c.totalPaid}","${projects.filter((p) => p.clientId === c.id).length}"`
+          `"${c.id}","${c.organizationName}","${c.primaryContactName}","${c.tier}","${c.totalLtv}","${c.totalPaid}","${projects.filter((p) => p.clientId === c.id).length}"`
       )
       .join('\n');
 
@@ -337,10 +337,10 @@ export default function ReportsPage() {
             <span>Client Lifetime Revenue Ledger</span>
           </div>
           <Link
-            href="/organizations"
+            href="/client-hub"
             className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
           >
-            Manage Organization Workspaces &rarr;
+            Manage Client Workspaces &rarr;
           </Link>
         </div>
 
@@ -359,6 +359,9 @@ export default function ReportsPage() {
                     <span className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
                       {client.organizationName}
                     </span>
+                    <span className="text-[10px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.2 rounded text-zinc-600 dark:text-zinc-300">
+                      {client.tier}
+                    </span>
                   </div>
                   <p className="text-[11px] text-zinc-500 mt-0.5">
                     Lead Partner: {client.assignedLeadPartner || 'Nagireddy Sai Prabhath'} • {clientProjects.length} Project{clientProjects.length === 1 ? '' : 's'}
@@ -376,7 +379,7 @@ export default function ReportsPage() {
                   </div>
 
                   <Link
-                    href={`/organizations/${client.id}`}
+                    href={`/client-hub/${client.id}`}
                     className="text-xs border border-zinc-300 dark:border-zinc-700/60 px-2.5 py-1 rounded font-medium bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Details

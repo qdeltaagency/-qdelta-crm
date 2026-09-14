@@ -8,13 +8,16 @@ import {
   CheckIcon,
   EyeIcon,
   EyeSlashIcon,
+  TrashIcon,
+  ArrowPathIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import { useCRM } from '@/lib/store';
 import { useToast } from '@/components/ui/toast';
 import { sanitizeString } from '@/lib/security';
 
 export default function SettingsPage() {
-  const { settings, updateSettings } = useCRM();
+  const { settings, updateSettings, resetToSeedData, exportBackupJSON, refreshData, isLoading } = useCRM();
   const { toast } = useToast();
 
   // Local Form State bound to CRM Settings
@@ -28,6 +31,7 @@ export default function SettingsPage() {
 
   // UI state for password/key visibility
   const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   // Synchronize when global settings hydrate
   useEffect(() => {
@@ -64,6 +68,56 @@ export default function SettingsPage() {
       title: 'Settings Saved Successfully',
       description: 'Your agency configuration and workspace preferences have been updated.',
     });
+  };
+
+  const handleClearLocalStorage = async () => {
+    setIsClearing(true);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+      }
+      await resetToSeedData();
+      toast({
+        type: 'success',
+        title: 'Local Storage Cleared',
+        description: 'All local storage items, UI caches, and session data have been wiped. Live data re-synced from Supabase.',
+      });
+    } catch {
+      toast({
+        type: 'error',
+        title: 'Storage Reset Notice',
+        description: 'Storage wiped. Re-syncing database records.',
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleExportBackup = () => {
+    try {
+      const dataStr = exportBackupJSON();
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qdelta-crm-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({
+        type: 'success',
+        title: 'Backup Exported',
+        description: 'A JSON backup of your current CRM state has been downloaded.',
+      });
+    } catch {
+      toast({
+        type: 'error',
+        title: 'Export Failed',
+        description: 'Could not export backup file.',
+      });
+    }
   };
 
   return (
@@ -207,7 +261,52 @@ export default function SettingsPage() {
             <p className="text-[10px] text-zinc-400 mt-1">Optional override. Default key is loaded server-side from environment variables.</p>
           </div>
         </div>
+
+        {/* SECTION 3: STORAGE, CACHE & DATA SYNC */}
+        <div className="bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl p-5 space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <TrashIcon className="h-4 w-4 text-zinc-500 dark:text-[#8B8B94]" />
+              <span>Storage & Local Cache Management</span>
+            </h2>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+              Clear local storage caches, reset UI preferences, or export data backups
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={handleClearLocalStorage}
+              disabled={isClearing}
+              className="bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-500/20 font-medium px-3.5 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+              <span>{isClearing ? 'Clearing Storage...' : 'Clear All Local Storage & Cache'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => refreshData()}
+              disabled={isLoading}
+              className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium px-3.5 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <ArrowPathIcon className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Re-sync Live Supabase Data</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportBackup}
+              className="bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-medium px-3.5 py-2 rounded-lg text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <ArrowDownTrayIcon className="h-3.5 w-3.5" />
+              <span>Export JSON Backup</span>
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );
 }
+

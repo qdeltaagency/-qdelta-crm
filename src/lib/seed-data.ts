@@ -21,3 +21,4 @@ export const INITIAL_PROJECTS: Project[] = [];
 export const INITIAL_PAYMENTS: Payment[] = [];
 
 export const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [];
+

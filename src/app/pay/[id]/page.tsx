@@ -70,9 +70,7 @@ export default function PaymentCheckoutPage() {
   const servicePillar = lead?.serviceType || 'Web Design & Full-Stack App';
   const currency = lead?.currency || 'USD';
   const totalAmount = lead?.quoteAmount || (lead?.budget ? parseFloat(lead.budget.replace(/[^0-9.]/g, '')) : 5000) || 5000;
-  const depositAmount = Math.round(totalAmount * 0.3);
-  const midMilestoneAmount = Math.round(totalAmount * 0.35);
-  const finalLaunchAmount = Math.max(0, totalAmount - depositAmount - midMilestoneAmount);
+  const depositAmount = Math.round(totalAmount * 0.5);
   const timeline = lead?.timeline || 'Standard (2 - 4 Weeks)';
 
   // Canvas Drawing Handlers
@@ -197,7 +195,7 @@ export default function PaymentCheckoutPage() {
             projectTitle: `${lead.serviceType || 'Digital Studio'} Flagship Sprint`,
             amount: depositAmount,
             currency: lead.currency || 'USD',
-            milestoneType: 'Deposit (30%)',
+            milestoneType: '1st Deposit (50%)',
             transactionId: generatedTxId,
             receiptUrl: `${baseUrl}/pay/${lead.id}`,
             portalUrl: `${baseUrl}/client-hub`,
@@ -330,7 +328,7 @@ export default function PaymentCheckoutPage() {
                     : 'bg-white/5 text-zinc-400'
                 }`}
               >
-                <span>2. Kickoff Deposit (30%)</span>
+                <span>2. Deposit Payment (50%)</span>
               </div>
             </div>
           )}
@@ -357,30 +355,22 @@ export default function PaymentCheckoutPage() {
                   </div>
                 </div>
 
-                {/* 3-Stage Milestone Schedule */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                {/* 2-Installment Milestone Schedule */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div className="p-2 rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/25">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-indigo-950 dark:text-indigo-200 text-[10px]">1. Deposit (30%)</span>
-                      <span className="font-bold text-indigo-900 dark:text-indigo-200 text-[11px]">${depositAmount.toLocaleString()} {currency}</span>
+                      <span className="font-semibold text-indigo-950 dark:text-indigo-200 text-[11px]">1st Installment (50% Deposit)</span>
+                      <span className="font-bold text-indigo-900 dark:text-indigo-200">${depositAmount.toLocaleString()} {currency}</span>
                     </div>
-                    <p className="text-[9px] text-indigo-700 dark:text-indigo-400 mt-0.5">Due on signing to reserve sprint</p>
+                    <p className="text-[9px] text-indigo-700 dark:text-indigo-400 mt-0.5">Due upon signing to reserve sprint & start discovery</p>
                   </div>
 
                   <div className="p-2 rounded-lg bg-zinc-100/70 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-300 text-[10px]">2. Mid-Dev (35%)</span>
-                      <span className="font-semibold text-zinc-700 dark:text-zinc-300 text-[11px]">${midMilestoneAmount.toLocaleString()} {currency}</span>
+                      <span className="font-medium text-zinc-800 dark:text-zinc-300 text-[11px]">2nd Installment (50% Final)</span>
+                      <span className="font-semibold text-zinc-700 dark:text-zinc-300">${depositAmount.toLocaleString()} {currency}</span>
                     </div>
-                    <p className="text-[9px] text-zinc-500 mt-0.5">Due upon core design/feature review</p>
-                  </div>
-
-                  <div className="p-2 rounded-lg bg-zinc-100/70 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-zinc-800 dark:text-zinc-300 text-[10px]">3. Launch (35%)</span>
-                      <span className="font-semibold text-zinc-700 dark:text-zinc-300 text-[11px]">${finalLaunchAmount.toLocaleString()} {currency}</span>
-                    </div>
-                    <p className="text-[9px] text-zinc-500 mt-0.5">Due on staging approval & launch</p>
+                    <p className="text-[9px] text-zinc-500 mt-0.5">Due on staging sign-off, handover & production launch</p>
                   </div>
                 </div>
               </div>
@@ -395,7 +385,7 @@ export default function PaymentCheckoutPage() {
                     <strong className="text-zinc-800 dark:text-zinc-200">1. Scope of Work:</strong> Qdelta Digital Studio agrees to engineer and deliver the deliverables outlined in this Statement of Work according to the specified timeline.
                   </p>
                   <p>
-                    <strong className="text-zinc-800 dark:text-zinc-200">2. Milestone Settlement:</strong> A 30% kickoff deposit authorizes commencement. A 35% mid-development milestone is billed upon core deliverables review, and the final 35% balance is due upon staging approval prior to final production handover.
+                    <strong className="text-zinc-800 dark:text-zinc-200">2. Milestone Settlement:</strong> A non-refundable 50% deposit authorizes commencement. The remaining 50% balance becomes payable upon final staging approval prior to DNS/production deployment.
                   </p>
                   <p>
                     <strong className="text-zinc-800 dark:text-zinc-200">3. Intellectual Property:</strong> 100% full ownership of custom code, design system tokens, assets, and database architecture automatically transfers to the Client upon final invoice settlement.
@@ -504,7 +494,7 @@ export default function PaymentCheckoutPage() {
                     className="mt-0.5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   <span className="text-[11px] text-zinc-700 dark:text-zinc-300 leading-tight">
-                    I confirm that I am authorized to bind <strong className="text-zinc-900 dark:text-zinc-100">{companyName}</strong> to this Statement of Work, and agree to the 3-stage milestone terms (30% / 35% / 35%) and IP ownership provisions.
+                    I confirm that I am authorized to bind <strong className="text-zinc-900 dark:text-zinc-100">{companyName}</strong> to this Statement of Work, and agree to the 2-installment milestone terms and IP ownership provisions.
                   </span>
                 </label>
 
@@ -526,7 +516,7 @@ export default function PaymentCheckoutPage() {
             </form>
           )}
 
-          {/* STEP 2: DEPOSIT PAYMENT (30% UPFRONT) */}
+          {/* STEP 2: DEPOSIT PAYMENT (50% UPFRONT) */}
           {currentStep === 2 && (
             <div className="space-y-4">
               {/* Signed Agreement Verification Seal */}
@@ -555,15 +545,15 @@ export default function PaymentCheckoutPage() {
               <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/80 rounded-xl space-y-2.5">
                 <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-2">
                   <div>
-                    <p className="text-[9px] uppercase font-semibold text-zinc-400 tracking-wider">Milestone 1 (30% Kickoff Deposit)</p>
+                    <p className="text-[9px] uppercase font-semibold text-zinc-400 tracking-wider">Installment 1 (50% Upfront Deposit)</p>
                     <p className="text-base font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
                       ${depositAmount.toLocaleString()} {currency}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] uppercase font-semibold text-zinc-400 tracking-wider">Remaining Milestones</p>
+                    <p className="text-[9px] uppercase font-semibold text-zinc-400 tracking-wider">Remaining on Launch</p>
                     <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mt-0.5">
-                      ${(midMilestoneAmount + finalLaunchAmount).toLocaleString()} {currency} (35% + 35%)
+                      ${depositAmount.toLocaleString()} {currency}
                     </p>
                   </div>
                 </div>
@@ -616,7 +606,7 @@ export default function PaymentCheckoutPage() {
                   ) : (
                     <>
                       <CreditCardIcon className="h-4 w-4" />
-                      <span>Authorize & Pay Kickoff Deposit (${depositAmount.toLocaleString()} {currency})</span>
+                      <span>Authorize & Pay Deposit (${depositAmount.toLocaleString()} {currency})</span>
                     </>
                   )}
                 </button>
@@ -706,3 +696,4 @@ export default function PaymentCheckoutPage() {
     </div>
   );
 }
+

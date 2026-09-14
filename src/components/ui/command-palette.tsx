@@ -167,17 +167,17 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
             </div>
           )}
 
-          {/* Organizations / Clients Matches */}
+          {/* Clients Matches */}
           {filteredClients.length > 0 && (
             <div>
               <span className="px-3 py-1 text-[10px] font-medium text-zinc-400 dark:text-[#71717A] uppercase tracking-wider font-mono block">
-                Organizations & Accounts
+                Active Clients
               </span>
               <div className="space-y-0.5 mt-1">
                 {filteredClients.map((client) => (
                   <button
                     key={client.id}
-                    onClick={() => navigateTo(`/organizations/${client.id}`)}
+                    onClick={() => navigateTo('/clients')}
                     className="w-full p-2.5 rounded-[6px] hover:bg-zinc-100 dark:hover:bg-[#232327] flex items-center justify-between text-left cursor-pointer"
                   >
                     <div>
@@ -185,7 +185,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                       <span className="text-[11px] text-zinc-500 dark:text-[#A1A1AA]">{client.primaryContactName}</span>
                     </div>
                     <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-[#232327] dark:text-[#A1A1AA] dark:border-[#2C2C31]">
-                      {client.clientType === 'Individual' ? 'Individual' : 'Organization'}
+                      {client.tier}
                     </span>
                   </button>
                 ))}

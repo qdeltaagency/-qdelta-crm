@@ -55,13 +55,13 @@ export default function AIStudioPage() {
       'SEO metadata optimization, sub-second LCP caching, and responsive mobile polish.',
     ],
     milestones: [
-      { title: 'Stage 1: Asset Discovery & Wireframe Architecture', timeline: 'Week 1', payment: 'Deposit (30%) - $2,550' },
-      { title: 'Stage 2: Core Engineering & CMS / Backend Integrations', timeline: 'Week 2-3', payment: 'Milestone 2 (35%) - $2,975' },
-      { title: 'Stage 3: Staging Review & Revisions Walkthrough', timeline: 'Week 4', payment: 'Client Approval Sprint' },
-      { title: 'Stage 4: Production DNS Launch & Final Handover', timeline: 'Week 4+', payment: 'Final Launch (35%) - $2,975' },
+      { title: 'Stage 1: Asset Discovery & Wireframe Architecture', timeline: 'Week 1', payment: '50% Deposit ($4,250)' },
+      { title: 'Stage 2: Core Engineering & CMS / Backend Integrations', timeline: 'Week 2-3', payment: 'In-Progress Sprint' },
+      { title: 'Stage 3: Staging Review & Revisions Walkthrough', timeline: 'Week 4', payment: 'Client Approval' },
+      { title: 'Stage 4: Production DNS Launch & Final Handover', timeline: 'Week 4+', payment: 'Milestone 2 ($4,250)' },
     ],
     techStack: ['Next.js 15', 'TypeScript', 'Tailwind CSS', 'Supabase', 'Framer Motion', 'Vercel Edge'],
-    clientPitchEmail: `Hi there,\n\nFollowing our discovery discussion, we've structured a comprehensive Statement of Work (SOW) for ${projectName}.\n\nOur sprint covers end-to-end design, full-stack Next.js engineering, and sub-second performance tuning for a fixed investment of $8,500 split into 3 milestones (30% deposit to initiate sprint, 35% at mid-development review, 35% upon final production sign-off).\n\nLet us know if you'd like to review the Figma wireframes or if you're ready for the kickoff link!\n\nBest regards,\nQdelta Team`,
+    clientPitchEmail: `Hi there,\n\nFollowing our discovery discussion, we've structured a comprehensive Statement of Work (SOW) for ${projectName}.\n\nOur sprint covers end-to-end design, full-stack Next.js engineering, and sub-second performance tuning for a fixed investment of $8,500 split into 2 milestones (50% deposit to initiate sprint, 50% upon final production sign-off).\n\nLet us know if you'd like to review the Figma wireframes or if you're ready for the kickoff link!\n\nBest regards,\nQdelta Team`,
   });
 
   // Qualifier State
@@ -70,7 +70,7 @@ export default function AIStudioPage() {
   const [qualifyTimeline, setQualifyTimeline] = useState('3 Weeks');
   const [qualifyResult, setQualifyResult] = useState<{
     score: number;
-    grade: string;
+    tier: string;
     mode: string;
     risks: string[];
     strengths: string[];
@@ -93,9 +93,8 @@ export default function AIStudioPage() {
     setIsGenerating(true);
 
     setTimeout(() => {
-      const deposit = Math.round(budget * 0.3);
-      const milestone2 = Math.round(budget * 0.35);
-      const finalPayment = Math.max(0, budget - deposit - milestone2);
+      const deposit = Math.round(budget * 0.5);
+      const finalPayment = budget - deposit;
 
       setGeneratedSOW({
         executiveSummary: `Qdelta will design, engineer, and deploy a bespoke ${servicePillar} solution for ${clientName}. This contract encompasses rapid iterative sprint delivery, high-performance architecture, and complete ownership transfer upon final settlement.`,
@@ -107,13 +106,13 @@ export default function AIStudioPage() {
           `Production deploy to Vercel/AWS with custom domain SSL and automated backups.`,
         ],
         milestones: [
-          { title: 'Stage 1: Discovery, Architecture & Figma Wireframes', timeline: 'Week 1', payment: `Deposit (30%) - $${deposit.toLocaleString()}` },
-          { title: 'Stage 2: Frontend & Backend Core Development Sprint', timeline: 'Week 2-3', payment: `Milestone 2 (35%) - $${milestone2.toLocaleString()}` },
+          { title: 'Stage 1: Discovery, Architecture & Figma Wireframes', timeline: 'Week 1', payment: `50% Deposit (${deposit.toLocaleString()})` },
+          { title: 'Stage 2: Frontend & Backend Core Development Sprint', timeline: 'Week 2-3', payment: 'Sprint In Progress' },
           { title: 'Stage 3: Staging Review Walkthrough & Client QA', timeline: 'Week 4', payment: 'Approval Sign-off' },
-          { title: 'Stage 4: Production Handover & Live DNS Cutover', timeline: 'Week 4+', payment: `Final Launch (35%) - $${finalPayment.toLocaleString()}` },
+          { title: 'Stage 4: Production Handover & Live DNS Cutover', timeline: 'Week 4+', payment: `Milestone 2 (${finalPayment.toLocaleString()})` },
         ],
         techStack: ['Next.js App Router', 'TypeScript', 'Tailwind CSS', 'Supabase PostgreSQL', 'Vercel Edge'],
-        clientPitchEmail: `Hi ${clientName} team,\n\nFollowing up on our discussions, here is the tailored project plan and SOW for ${projectName}.\n\nKey Highlights:\n- Service: ${servicePillar}\n- Timeline: ${timeline}\n- Total Contract Value: $${budget.toLocaleString()} USD (30% deposit of $${deposit.toLocaleString()} / 35% milestone 2 of $${milestone2.toLocaleString()} / 35% final balance of $${finalPayment.toLocaleString()})\n\nWe are ready to initiate the design sprint immediately upon invoice confirmation.\n\nBest regards,\nQdelta Team`,
+        clientPitchEmail: `Hi ${clientName} team,\n\nFollowing up on our discussions, here is the tailored project plan and SOW for ${projectName}.\n\nKey Highlights:\n- Service: ${servicePillar}\n- Timeline: ${timeline}\n- Total Contract Value: ${budget.toLocaleString()} USD (50% upfront deposit of ${deposit.toLocaleString()} / 50% milestone 2 balance upon production sign-off)\n\nWe are ready to initiate the design sprint immediately upon invoice confirmation.\n\nBest regards,\nQdelta Team`,
       });
 
       setIsGenerating(false);
@@ -136,7 +135,7 @@ export default function AIStudioPage() {
 
       setQualifyResult({
         score: Math.max(10, Math.min(98, score)),
-        grade: score >= 80 ? 'Grade A (High Value / High Win)' : score >= 60 ? 'Grade B (Standard)' : 'Grade C (High Risk / Low Margin)',
+        tier: score >= 80 ? 'Tier A (High Value / High Win)' : score >= 60 ? 'Tier B (Standard)' : 'Tier C (High Risk / Low Margin)',
         mode,
         risks: [
           qualifyTimeline.includes('1') ? 'Compressed timeline: Requires overtime or scope trim.' : 'Standard delivery timeline manageable.',
@@ -524,7 +523,7 @@ export default function AIStudioPage() {
                     <h2 className="text-xs md:text-sm font-semibold text-zinc-900 dark:text-zinc-200">
                       Qualification Verdict
                     </h2>
-                    <p className="text-[11px] text-zinc-500">{qualifyResult.grade}</p>
+                    <p className="text-[11px] text-zinc-500">{qualifyResult.tier}</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">

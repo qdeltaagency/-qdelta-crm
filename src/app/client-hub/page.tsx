@@ -17,7 +17,7 @@ import { useCRM } from '@/lib/store';
 import { useToast } from '@/components/ui/toast';
 import { ServicePillar } from '@/lib/types';
 
-export default function OrganizationsPage() {
+export default function ClientHubPage() {
   const router = useRouter();
   const { clients, projects, payments, addClient, addProject, addPayment } = useCRM();
   const { toast } = useToast();
@@ -34,7 +34,7 @@ export default function OrganizationsPage() {
     }
   }, []);
 
-  // New Organization Form State
+  // New Client Form State
   const [formData, setFormData] = useState({
     organizationName: '',
     primaryContactName: '',
@@ -44,7 +44,7 @@ export default function OrganizationsPage() {
     notes: '',
   });
 
-  // Filter strictly for Organizations / Companies
+  // Filter strictly for Client Hub / Companies
   const organizationClients = useMemo(() => {
     return clients.filter((c) => c.clientType !== 'Individual');
   }, [clients]);
@@ -53,7 +53,7 @@ export default function OrganizationsPage() {
     const q = searchQuery.toLowerCase().trim();
     return organizationClients.filter((client) => {
       if (!q) return true;
-      const orgMatch = client.organizationName.toLowerCase().includes(q) || client.name.toLowerCase().includes(q);
+      const orgMatch = client.organizationName.toLowerCase().includes(q) || client.organizationName.toLowerCase().includes(q);
       const contactMatch = client.primaryContactName.toLowerCase().includes(q);
       const emailMatch = client.email.toLowerCase().includes(q);
       const countryMatch = client.country ? client.country.toLowerCase().includes(q) : false;
@@ -63,7 +63,7 @@ export default function OrganizationsPage() {
     });
   }, [organizationClients, searchQuery, projects]);
 
-  // Project & Financial Metrics for Organizations
+  // Project & Financial Metrics for Client Hub
   const orgClientIds = useMemo(() => new Set(organizationClients.map((c) => c.id)), [organizationClients]);
 
   const orgProjects = useMemo(() => {
@@ -98,10 +98,10 @@ export default function OrganizationsPage() {
     }
 
     const newClient = addClient({
-      type: 'Organization',
+      type: 'Client',
       name: formData.organizationName.trim(),
       contactPerson: formData.primaryContactName.trim(),
-      clientType: 'Organization',
+      clientType: 'Client',
       organizationName: formData.organizationName.trim(),
       primaryContactName: formData.primaryContactName.trim(),
       email: formData.email.trim(),
@@ -116,12 +116,12 @@ export default function OrganizationsPage() {
         kickoffBooked: false,
         slackInvited: false,
       },
-      notes: formData.notes.trim() || `Organization account profile created for ${formData.organizationName.trim()}.`,
+      notes: formData.notes.trim() || `Client account profile created for ${formData.organizationName.trim()}.`,
     });
 
     toast({
       type: 'success',
-      title: 'Organization Created! 🏢',
+      title: 'Client Created! 🏢',
       description: `${newClient.organizationName} workspace is ready.`,
     });
 
@@ -145,7 +145,7 @@ export default function OrganizationsPage() {
           <div className="flex items-center gap-2.5">
             <h1 className="text-lg md:text-xl font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight flex items-center gap-2">
               <Building2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-              <span>Organizations & Companies</span>
+              <span>Client Hub & Companies</span>
             </h1>
             <span className="text-[11px] font-medium text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 px-2.5 py-0.5 rounded-full">
               {organizationClients.length} {organizationClients.length === 1 ? 'Company' : 'Companies'}
@@ -177,7 +177,7 @@ export default function OrganizationsPage() {
             className="bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs"
           >
             <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
-            <span>New Organization</span>
+            <span>New Client</span>
           </button>
         </div>
       </div>
@@ -225,11 +225,11 @@ export default function OrganizationsPage() {
         </div>
       </div>
 
-      {/* Organizations Directory Table Container */}
+      {/* Client Hub Directory Table Container */}
       <div className="bg-white dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800/80 rounded-xl overflow-hidden shadow-2xs">
         {/* Table Header */}
         <div className="border-b border-zinc-200 dark:border-zinc-800/80 bg-zinc-50/80 dark:bg-zinc-950/60 px-4 py-2.5 text-zinc-500 dark:text-zinc-400 text-xs font-semibold grid grid-cols-12 items-center">
-          <div className="col-span-12 sm:col-span-4">Organization & Contact Person</div>
+          <div className="col-span-12 sm:col-span-4">Client & Contact Person</div>
           <div className="col-span-6 sm:col-span-3">Linked Projects & Stage</div>
           <div className="col-span-6 sm:col-span-3">Financials (LTV & Paid)</div>
           <div className="col-span-12 sm:col-span-2 text-right">Workspace</div>
@@ -260,13 +260,13 @@ export default function OrganizationsPage() {
                       <div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Link
-                            href={`/organizations/${client.id}`}
+                            href={`/client-hub/${client.id}`}
                             className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           >
                             {client.organizationName}
                           </Link>
                           <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20">
-                            Organization
+                            Client
                           </span>
                         </div>
                         <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-2 flex-wrap">
@@ -329,7 +329,7 @@ export default function OrganizationsPage() {
                   {/* Col 4: Action Button */}
                   <div className="col-span-12 sm:col-span-2 text-right">
                     <Link
-                      href={`/organizations/${client.id}`}
+                      href={`/client-hub/${client.id}`}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-700 dark:text-zinc-200 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors"
                     >
                       <span>Open Hub</span>
@@ -355,14 +355,14 @@ export default function OrganizationsPage() {
         </div>
       </div>
 
-      {/* Manual Add Organization Modal */}
+      {/* Manual Add Client Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 max-w-lg w-full space-y-4 shadow-xl">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-200 dark:border-zinc-800">
               <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Create New Organization Workspace</span>
+                <span>Create New Client Workspace</span>
               </h2>
               <button
                 type="button"
@@ -376,7 +376,7 @@ export default function OrganizationsPage() {
             <form onSubmit={handleCreateClient} className="space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="font-medium text-zinc-700 dark:text-zinc-300">Company / Organization Name *</label>
+                  <label className="font-medium text-zinc-700 dark:text-zinc-300">Company / Client Name *</label>
                   <input
                     type="text"
                     required
@@ -470,7 +470,7 @@ export default function OrganizationsPage() {
                   type="submit"
                   className="px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 font-semibold transition-colors shadow-xs"
                 >
-                  Create Organization
+                  Create Client
                 </button>
               </div>
             </form>

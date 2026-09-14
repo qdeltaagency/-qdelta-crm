@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       projectTitle = 'Digital Flagship Engineering Sprint',
       amount = 0,
       currency = 'USD',
-      milestoneType = 'Deposit (30%)',
+      milestoneType = '1st Deposit (50%)',
       transactionId = `PP-TX-${Date.now().toString().slice(-6)}`,
       receiptUrl,
       portalUrl,

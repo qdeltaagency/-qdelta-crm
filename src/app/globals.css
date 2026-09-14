@@ -110,14 +110,3 @@ body {
   animation: antiGravityLift 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Remove number input spinner arrows across all browsers */
-input[type='number']::-webkit-inner-spin-button,
-input[type='number']::-webkit-outer-spin-button {
-  -webkit-appearance: none !important;
-  margin: 0 !important;
-}
-
-input[type='number'] {
-  -moz-appearance: textfield !important;
-  appearance: textfield !important;
-}

@@ -7,7 +7,6 @@ import {
   Squares2X2Icon,
   UsersIcon,
   BuildingOffice2Icon,
-  UserIcon,
   FolderIcon,
   CreditCardIcon,
   GlobeAltIcon,
@@ -87,20 +86,20 @@ export function Sidebar() {
           badge: leadsAttentionCount > 0 ? leadsAttentionCount : null,
         },
         {
-          href: '/organizations',
-          label: 'Organizations',
+          href: '/clients',
+          label: 'Clients',
           icon: BuildingOffice2Icon,
-        },
-        {
-          href: '/individuals',
-          label: 'Individuals',
-          icon: UserIcon,
         },
         {
           href: '/projects',
           label: 'Projects',
           icon: FolderIcon,
           badge: projectsAttentionCount > 0 ? projectsAttentionCount : null,
+        },
+        {
+          href: '/client-hub',
+          label: 'Client Hub',
+          icon: RectangleStackIcon,
         },
       ],
     },
@@ -112,6 +111,11 @@ export function Sidebar() {
           label: 'Payments',
           icon: CreditCardIcon,
           badge: paymentsPendingCount > 0 ? paymentsPendingCount : null,
+        },
+        {
+          href: '/partners',
+          label: 'Agency Network',
+          icon: GlobeAltIcon,
         },
       ],
     },
@@ -410,3 +414,4 @@ export function Sidebar() {
     </>
   );
 }
+

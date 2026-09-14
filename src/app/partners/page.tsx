@@ -101,6 +101,7 @@ export default function PartnersPage() {
       l.status === 'Referred Out' ||
       l.handlingMode === 'White-Label / Partner' ||
       l.handlingMode === 'Referred Out' ||
+      Boolean(l.partnerAgencyId) ||
       Boolean(l.referringPartner)
   );
 
@@ -241,7 +242,8 @@ export default function PartnersPage() {
           {filteredPartners.map((partner) => {
             const directMatchingLeads = leads.filter(
               (l) =>
-                Boolean(l.referringPartner) && l.referringPartner?.toLowerCase() === partner.name.toLowerCase()
+                l.partnerAgencyId === partner.id ||
+                (l.referringPartner && l.referringPartner.toLowerCase() === partner.name.toLowerCase())
             );
             const dynamicLeadsCount = Math.max(partner.totalReferredLeads || 0, directMatchingLeads.length);
             const directEarned = directMatchingLeads.reduce(
@@ -348,10 +350,8 @@ export default function PartnersPage() {
         <div className="divide-y divide-zinc-200 dark:divide-zinc-800/50">
           {referredLeads.length > 0 ? (
             referredLeads.map((lead) => {
-              const matchedPartner = partnerAgencies.find(
-                (p) => lead.referringPartner && p.name.toLowerCase() === lead.referringPartner.toLowerCase()
-              );
-              const partnerName = matchedPartner?.name || lead.referringPartner || 'External Referral';
+              const matchedPartner = partnerAgencies.find((p) => p.id === lead.partnerAgencyId);
+              const partnerName = matchedPartner?.name || lead.referringPartner || 'External Partner Agency';
 
               return (
                 <div

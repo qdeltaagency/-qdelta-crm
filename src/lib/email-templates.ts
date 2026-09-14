@@ -92,7 +92,7 @@ export function generatePaymentReceiptHtml(data: PaymentReceiptEmailData): strin
                       <tr>
                         <td style="color: #71717a; font-size: 12px; padding: 6px 0; border-top: 1px solid #27272a;">Milestone Stage</td>
                         <td align="right" style="color: #e4e4e7; font-size: 12px; font-weight: 600; padding: 6px 0; border-top: 1px solid #27272a;">
-                          ${data.milestoneType || 'Deposit (30%)'}
+                          ${data.milestoneType || '1st Deposit (50%)'}
                         </td>
                       </tr>
                       <tr>

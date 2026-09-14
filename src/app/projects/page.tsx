@@ -546,10 +546,10 @@ export default function ProjectsPage() {
             <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-3">
               {selectedClient && (
                 <Link
-                  href={`/organizations/${selectedClient.id}`}
+                  href={`/client-hub/${selectedClient.id}`}
                   className="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>Open Organization Workspace</span>
+                  <span>Open in Client Hub</span>
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
               )}

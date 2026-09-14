@@ -266,21 +266,15 @@ export default function PaymentsPage() {
       },
       {
         id: 'milestone1',
-        label: '1st Kickoff (30%)',
+        label: '1st Deposit (50%)',
         icon: CheckCircle2,
         count: paymentsInTimeRange.filter((p) => getPaymentMeta(p).isDeposit).length,
       },
       {
         id: 'milestone2',
-        label: 'Mid-Dev Milestone (35%)',
+        label: '2nd Launch (50%)',
         icon: Zap,
         count: paymentsInTimeRange.filter((p) => getPaymentMeta(p).isMilestone2).length,
-      },
-      {
-        id: 'milestone3',
-        label: 'Final Launch (35%)',
-        icon: Zap,
-        count: paymentsInTimeRange.filter((p) => p.type.includes('Launch') || p.type.includes('Final')).length,
       },
     ],
     [paymentsInTimeRange, projects, clients]
@@ -540,7 +534,7 @@ export default function PaymentsPage() {
         >
           <div className="flex items-center justify-between">
             <p className={`text-[11px] font-medium uppercase tracking-wider ${filterStatus === 'milestone1' ? 'text-zinc-300 dark:text-zinc-600 font-semibold' : 'text-zinc-500 dark:text-zinc-400'}`}>
-              1st Kickoff (30%)
+              1st Deposit (50%)
             </p>
             {filterStatus === 'milestone1' && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 dark:bg-zinc-200 dark:text-zinc-800">Filtered</span>}
           </div>
@@ -549,7 +543,7 @@ export default function PaymentsPage() {
           </p>
         </button>
 
-        {/* Card 3: Milestone 2 & 3 */}
+        {/* Card 3: Milestone 2 (Final Launch) */}
         <button
           type="button"
           onClick={() => setFilterStatus(filterStatus === 'milestone2' ? 'all' : 'milestone2')}
@@ -561,7 +555,7 @@ export default function PaymentsPage() {
         >
           <div className="flex items-center justify-between">
             <p className={`text-[11px] font-medium uppercase tracking-wider ${filterStatus === 'milestone2' ? 'text-zinc-300 dark:text-zinc-600 font-semibold' : 'text-zinc-500 dark:text-zinc-400'}`}>
-              Mid-Dev Milestone (35%)
+              2nd Launch (50%)
             </p>
             {filterStatus === 'milestone2' && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200 dark:bg-zinc-200 dark:text-zinc-800">Filtered</span>}
           </div>
@@ -626,7 +620,7 @@ export default function PaymentsPage() {
                               : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/20'
                           }`}
                         >
-                          {p.type || (meta.isDeposit ? 'Deposit (30%)' : 'Milestone 2 (35%)')}
+                          {meta.isDeposit ? '1st Deposit (50%)' : '2nd Launch (50%)'}
                         </span>
                       </div>
                       <p className="text-zinc-400 dark:text-zinc-500 text-[11px] mt-1 font-mono truncate">
@@ -957,10 +951,10 @@ export default function PaymentsPage() {
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   {selectedMeta.client && (
                     <Link
-                      href={`/organizations/${selectedMeta.client.id}`}
+                      href={`/client-hub/${selectedMeta.client.id}`}
                       className="text-center bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-700 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-1"
                     >
-                      <span>Organization</span>
+                      <span>Client Hub</span>
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
                   )}

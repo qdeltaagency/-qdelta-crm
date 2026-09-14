@@ -1,14 +1,15 @@
-// ==============================================================================
-// Qdelta CRM v1 — Master TypeScript Definitions & Types
-// ==============================================================================
-
 export type ServicePillar = 
-  | 'Landing Page'
-  | 'Multi-Page Website'
+  | 'Landing Pages'
+  | 'Web Design & Full-Stack'
+  | 'AI Solutions & Smart Workflows'
+  | 'Landing Pages & High Conversion'
   | 'Web Design & Full-Stack App'
-  | 'AI Agent & Next.js SaaS'
-  | 'Brand Identity & Design System'
+  | 'UI/UX Redesign & Overhaul'
+  | 'AI Solutions & Automations'
+  | 'Mobile App MVP'
   | string;
+
+export type LeadPriority = 'Hot' | 'Warm' | 'Cold';
 
 export type LeadStatus = 
   | 'New'
@@ -21,11 +22,11 @@ export type LeadStatus =
   | 'Referred Out'
   | 'Lost';
 
-export type LeadPriority = 'Hot' | 'Warm' | 'Cold';
-
 export type HandlingMode = 
   | 'In-House'
+  | 'White-Label / Partner'
   | 'Referred Out'
+  | 'Inbound Referral'
   | 'White-Label'
   | string;
 
@@ -34,6 +35,12 @@ export type TeamMemberName =
   | 'Nagireddy Sai Prabhath'
   | 'MD Fazeel'
   | string;
+
+export type ClientTier = 
+  | 'VIP Flagship'
+  | 'Enterprise'
+  | 'Growth Studio'
+  | 'Monthly Retainer';
 
 export type ProjectStatus = 
   | 'Planning'
@@ -53,9 +60,11 @@ export type PaymentType =
   | 'Monthly Retainer'
   | string;
 
-export type PaymentStatus = 'Pending' | 'Link Sent' | 'Paid' | 'Refunded';
-
-export type AccountType = 'Organization' | 'Individual';
+export type PaymentStatus = 
+  | 'Pending'
+  | 'Link Sent'
+  | 'Paid'
+  | 'Refunded';
 
 export interface Milestone {
   id: string;
@@ -67,8 +76,7 @@ export interface Milestone {
 
 export interface Lead {
   id: string;
-  leadType?: AccountType;
-  submissionType?: 'Website Form' | 'Manual CRM Entry' | 'Webhook / API' | string;
+  leadType?: 'Individual' | 'Organization';
   name: string;
   email: string;
   company?: string;
@@ -83,6 +91,7 @@ export interface Lead {
   status: LeadStatus;
   assignedTo?: TeamMemberName;
   handlingMode?: HandlingMode;
+  partnerAgencyId?: string;
   referringPartner?: string;
   referralCommissionRate?: number;
   referralCommissionAmount?: number;
@@ -91,6 +100,7 @@ export interface Lead {
   currency: string;
   leadScore: number;
   priority?: LeadPriority;
+  submissionType?: string;
   contractAgreement?: {
     signed: boolean;
     signerName?: string;
@@ -105,42 +115,17 @@ export interface Lead {
   updatedAt: string;
 }
 
-export type ActivityCategory = 'lead' | 'organization' | 'individual' | 'project' | 'payment' | 'partner' | 'ai' | 'system';
-
-export type ActivityActionType =
-  | 'created'
-  | 'status_changed'
-  | 'priority_changed'
-  | 'payment_link_generated'
-  | 'payment_received'
-  | 'converted'
-  | 'note_added'
-  | 'assigned'
-  | 'stage_advanced'
-  | 'general'
-  | string;
-
-export interface ActivityLog {
+export interface LeadActivity {
   id: string;
+  leadId: string;
+  clientId?: string;
+  actionType: 'created' | 'status_changed' | 'priority_changed' | 'payment_link_generated' | 'converted' | 'note_added' | 'assigned' | string;
   title: string;
   description: string;
-  category?: ActivityCategory;
-  actionType?: ActivityActionType;
-  leadId?: string;
-  organizationId?: string;
-  individualId?: string;
-  clientId?: string; // Compatibility alias
-  projectId?: string;
-  timestamp?: string;
-  createdAt?: string;
-  partner?: TeamMemberName | string;
   performedBy?: string;
+  timestamp?: string;
+  createdAt: string;
 }
-
-// Unified alias for backward compatibility across components
-export type LeadActivity = ActivityLog;
-
-
 
 export interface ContractAgreement {
   signed: boolean;
@@ -153,45 +138,19 @@ export interface ContractAgreement {
   scopeSummary?: string;
 }
 
-export interface Organization {
+export interface Client {
   id: string;
-  type: AccountType;
-  name: string; // Company name (e.g. Apex Labs)
-  contactPerson: string; // Primary contact person name
-  email: string;
-  phone?: string;
-  country?: string;
-  avatarUrl?: string;
-  leadId?: string;
-  assignedLeadPartner?: TeamMemberName;
-  totalLtv: number;
-  totalPaid: number;
-  onboardingStatus: {
-    brandAssets: boolean;
-    credentials: boolean;
-    kickoffBooked: boolean;
-    slackInvited: boolean;
-  };
-  contractAgreement?: ContractAgreement;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Compatibility aliases
+  name?: string;
+  type?: string;
+  clientType?: string;
+  contactPerson?: string;
   organizationName: string;
   primaryContactName: string;
-  clientType?: AccountType;
-}
-
-export interface Individual {
-  id: string;
-  type: AccountType;
-  name: string; // Person name (e.g. David Miller)
-  contactPerson: string; // Person name
   email: string;
   phone?: string;
   country?: string;
   avatarUrl?: string;
+  tier?: ClientTier;
   leadId?: string;
   assignedLeadPartner?: TeamMemberName;
   totalLtv: number;
@@ -206,21 +165,11 @@ export interface Individual {
   notes?: string;
   createdAt: string;
   updatedAt: string;
-
-  // Compatibility aliases
-  organizationName: string; // Maps to name
-  primaryContactName: string; // Maps to name
-  clientType?: AccountType;
 }
-
-export type Client = Organization | Individual;
 
 export interface Project {
   id: string;
-  clientType?: AccountType;
-  organizationId?: string;
-  individualId?: string;
-  clientId: string; // Compatibility alias (org or individual id)
+  clientId: string;
   clientName?: string;
   leadId?: string;
   title: string;
@@ -243,10 +192,7 @@ export interface Project {
 
 export interface Payment {
   id: string;
-  clientType?: AccountType;
-  organizationId?: string;
-  individualId?: string;
-  clientId?: string; // Compatibility alias
+  clientId?: string;
   clientName?: string;
   projectId?: string;
   projectTitle?: string;
@@ -271,13 +217,21 @@ export interface PartnerAgency {
   contactPerson: string;
   email: string;
   specialization: string;
-  defaultCommissionRate: number;
+  defaultCommissionRate: number; // e.g., 10
   totalReferredLeads: number;
   totalCommissionEarned: number;
   totalCommissionPaid: number;
   createdAt: string;
 }
 
+export interface ActivityLog {
+  id: string;
+  title: string;
+  description: string;
+  category: 'lead' | 'payment' | 'project' | 'partner' | 'ai';
+  timestamp: string;
+  partner?: TeamMemberName;
+}
 
 export interface AgencySettings {
   paypalHandle: string;

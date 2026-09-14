@@ -63,7 +63,7 @@ Generate a comprehensive proposal and Scope of Work (SOW) in strict JSON for thi
 Client Name: ${input.clientName}
 Company: ${input.companyName || 'Not specified'}
 Service: ${input.serviceType}
-Target Budget: ${input.budget || 'Standard Scope'}
+Target Budget: ${input.budget || 'Standard Studio Tier'}
 Timeline: ${input.timeline || '4-6 Weeks'}
 Details: ${input.details}
 

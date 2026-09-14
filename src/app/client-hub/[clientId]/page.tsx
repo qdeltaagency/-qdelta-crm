@@ -33,7 +33,7 @@ const STAGES: { id: ProjectStatus; name: string; desc: string; iconNumber: strin
   { id: 'Launched', name: '4. Production Launch & Handover', desc: 'Final launch & balance settlement', iconNumber: '4' },
 ];
 
-export default function OrganizationWorkspacePage() {
+export default function ClientWorkspacePage() {
   const params = useParams();
   const clientId = typeof params?.clientId === 'string' ? params.clientId : '';
   const { toast } = useToast();
@@ -218,11 +218,11 @@ export default function OrganizationWorkspacePage() {
         </p>
         <div className="pt-2">
           <Link
-            href="/organizations"
+            href="/client-hub"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 transition-colors"
           >
             <ArrowLeftIcon className="h-3.5 w-3.5" />
-            <span>Return to Organizations Directory</span>
+            <span>Return to Client Hub Directory</span>
           </Link>
         </div>
       </div>
@@ -235,11 +235,11 @@ export default function OrganizationWorkspacePage() {
       {/* Top Breadcrumb & Actions */}
       <div className="flex items-center justify-between pb-1 border-b border-zinc-200/80 dark:border-zinc-800/80">
         <Link
-          href="/organizations"
+          href="/client-hub"
           className="text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white inline-flex items-center gap-1.5 font-medium transition-colors cursor-pointer"
         >
           <ArrowLeftIcon className="h-3.5 w-3.5" />
-          <span>Back to Organizations</span>
+          <span>Back to Client Hub</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -262,7 +262,7 @@ export default function OrganizationWorkspacePage() {
               <span>{company}</span>
             </h1>
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${isOrg ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border-indigo-500/20' : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20'}`}>
-              {isOrg ? '🏢 Organization' : '👤 Individual Client'}
+              {isOrg ? '🏢 Client' : '👤 Individual Client'}
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex-wrap">

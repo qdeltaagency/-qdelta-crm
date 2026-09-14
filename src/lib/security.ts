@@ -379,3 +379,4 @@ export function getAuthenticatedSession(req: Request | Headers): {
   return { authenticated: true, user: result.payload };
 }
 
+

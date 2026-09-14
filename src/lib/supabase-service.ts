@@ -1,11 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase';
-import { Lead, Organization, Individual, Client, Project, Payment, LeadActivity, ActivityLog, LeadStatus, PaymentStatus, ProjectStatus } from './types';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-export function isValidUUID(id: string | null | undefined): boolean {
-  if (!id) return false;
-  return UUID_REGEX.test(id);
-}
+import { Lead, Client, Project, Payment, PartnerAgency, LeadActivity, LeadStatus, PaymentStatus, ProjectStatus } from './types';
 
 // Map snake_case DB row to camelCase Lead
 export function mapLeadRow(row: any): Lead {
@@ -17,19 +11,22 @@ export function mapLeadRow(row: any): Lead {
   return {
     id: row.id,
     leadType: (row.lead_type as 'Individual' | 'Organization') || (row.company && row.company !== row.name ? 'Organization' : 'Individual'),
-    submissionType: row.submission_type || 'Manual CRM Entry',
     name: row.name,
     email: row.email,
     company: row.company || '',
     phone: row.phone || '',
     country: row.country || '',
-    serviceType: row.service_type || 'Landing Page',
+    serviceType: row.service_type || 'Landing Pages & High Conversion',
     budget: row.budget || '',
     timeline: row.timeline || '',
     details: row.details || '',
     source: row.source || 'Manual CRM Entry',
     status: (row.status as LeadStatus) || 'New Inquiry',
     assignedTo: row.assigned_to || undefined,
+    handlingMode: row.handling_mode || 'In-House',
+    partnerAgencyId: row.partner_agency_id,
+    referralCommissionRate: row.referral_commission_rate ? Number(row.referral_commission_rate) : undefined,
+    referralCommissionAmount: row.referral_commission_amount ? Number(row.referral_commission_amount) : undefined,
     paypalPaymentLink: row.paypal_payment_link,
     quoteAmount: Number(row.quote_amount || 0),
     currency: row.currency || 'USD',
@@ -40,23 +37,17 @@ export function mapLeadRow(row: any): Lead {
   };
 }
 
-// Map snake_case DB row to camelCase Organization
-export function mapOrganizationRow(row: any): Organization {
-  const name = row.name || row.organization_name || '';
-  const contactPerson = row.contact_person || row.primary_contact_name || name;
-
+// Map snake_case DB row to camelCase Client
+export function mapClientRow(row: any): Client {
   return {
     id: row.id,
-    type: 'Organization',
-    name,
-    contactPerson,
-    organizationName: name, // Compatibility alias
-    primaryContactName: contactPerson, // Compatibility alias
-    clientType: 'Organization', // Compatibility alias
-    email: row.email || '',
+    organizationName: row.organization_name,
+    primaryContactName: row.primary_contact_name,
+    email: row.email,
     phone: row.phone || '',
     country: row.country || '',
     avatarUrl: row.avatar_url,
+    tier: row.tier,
     leadId: row.lead_id,
     assignedLeadPartner: row.assigned_lead_partner,
     totalLtv: Number(row.total_ltv || 0),
@@ -67,66 +58,17 @@ export function mapOrganizationRow(row: any): Organization {
       kickoffBooked: false,
       slackInvited: false,
     },
-    contractAgreement: row.contract_agreement,
     notes: row.notes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
-
-// Map snake_case DB row to camelCase Individual
-export function mapIndividualRow(row: any): Individual {
-  const name = row.name || row.primary_contact_name || '';
-
-  return {
-    id: row.id,
-    type: 'Individual',
-    name,
-    contactPerson: name,
-    organizationName: name, // Compatibility alias
-    primaryContactName: name, // Compatibility alias
-    clientType: 'Individual', // Compatibility alias
-    email: row.email || '',
-    phone: row.phone || '',
-    country: row.country || '',
-    avatarUrl: row.avatar_url,
-    leadId: row.lead_id,
-    assignedLeadPartner: row.assigned_lead_partner,
-    totalLtv: Number(row.total_ltv || 0),
-    totalPaid: Number(row.total_paid || 0),
-    onboardingStatus: row.onboarding_status || {
-      brandAssets: false,
-      credentials: false,
-      kickoffBooked: false,
-      slackInvited: false,
-    },
-    contractAgreement: row.contract_agreement,
-    notes: row.notes,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-export const mapClientRow = (row: any): Client => {
-  if (row.type === 'Individual' || (!row.contact_person && row.name)) {
-    return mapIndividualRow(row);
-  }
-  return mapOrganizationRow(row);
-};
 
 // Map snake_case DB row to camelCase Project
 export function mapProjectRow(row: any): Project {
-  const orgId = row.organization_id || row.client_id;
-  const indivId = row.individual_id;
-  const resolvedClientId = orgId || indivId || '';
-  const clientType = row.client_type || (indivId ? 'Individual' : 'Organization');
-
   return {
     id: row.id,
-    clientType,
-    organizationId: orgId || undefined,
-    individualId: indivId || undefined,
-    clientId: resolvedClientId, // Compatibility alias
+    clientId: row.client_id,
     title: row.title,
     servicePillar: row.service_pillar,
     contractValue: Number(row.contract_value || 0),
@@ -146,19 +88,10 @@ export function mapProjectRow(row: any): Project {
 
 // Map snake_case DB row to camelCase Payment
 export function mapPaymentRow(row: any): Payment {
-  const orgId = row.organization_id || row.client_id;
-  const indivId = row.individual_id;
-  const resolvedClientId = orgId || indivId || undefined;
-  const clientType = row.client_type || (indivId ? 'Individual' : 'Organization');
-
   return {
     id: row.id,
-    clientType,
-    organizationId: orgId || undefined,
-    individualId: indivId || undefined,
-    clientId: resolvedClientId, // Compatibility alias
+    clientId: row.client_id,
     leadId: row.lead_id,
-    projectId: row.project_id,
     amount: Number(row.amount || 0),
     currency: row.currency || 'USD',
     type: row.type,
@@ -171,32 +104,28 @@ export function mapPaymentRow(row: any): Payment {
   };
 }
 
-// Map snake_case DB row to camelCase ActivityLog
-export function mapActivityLogRow(row: any): ActivityLog {
+// Map snake_case DB row to camelCase PartnerAgency
+export function mapPartnerRow(row: any): PartnerAgency {
   return {
     id: row.id,
-    title: row.title,
-    description: row.description,
-    category: row.category || 'lead',
-    actionType: row.action_type || 'general',
-    leadId: row.lead_id || undefined,
-    organizationId: row.organization_id || undefined,
-    individualId: row.individual_id || undefined,
-    projectId: row.project_id || undefined,
-    partner: row.performed_by || row.partner || 'Nagireddy Sai Prabhath',
-    performedBy: row.performed_by || row.partner || 'Nagireddy Sai Prabhath',
-    timestamp: row.created_at,
+    name: row.name,
+    contactPerson: row.contact_person,
+    email: row.email,
+    specialization: row.specialization,
+    defaultCommissionRate: Number(row.default_commission_rate || 10),
+    totalReferredLeads: Number(row.total_referred_leads || 0),
+    totalCommissionEarned: Number(row.total_commission_earned || 0),
+    totalCommissionPaid: Number(row.total_commission_paid || 0),
     createdAt: row.created_at,
   };
 }
 
-// Backward compatibility alias
-export const mapLeadActivityRow = mapActivityLogRow;
+export const isValidUuid = (val?: string | null): boolean => {
+  if (!val || typeof val !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+};
 
-
-// ==============================================================================
-// Live Supabase CRUD Operations
-// ==============================================================================
+// --- Live Supabase API Handlers ---
 
 export async function fetchLiveLeads(): Promise<Lead[] | null> {
   if (!supabase) return null;
@@ -207,28 +136,73 @@ export async function fetchLiveLeads(): Promise<Lead[] | null> {
 
 export async function createLiveLead(lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt'>): Promise<Lead | null> {
   if (!supabase) return null;
-  const payload = {
-    lead_type: lead.leadType || (lead.company ? 'Organization' : 'Individual'),
-    submission_type: lead.submissionType || 'Manual CRM Entry',
+  let score = lead.leadScore || 80;
+  if (lead.priority === 'Hot') score = 95;
+  else if (lead.priority === 'Cold') score = 60;
+
+  const quoteAmt = Number(lead.quoteAmount || 0);
+  const autoPaypal = quoteAmt > 0
+    ? `https://paypal.me/qdeltastudio/${quoteAmt}${lead.currency || 'USD'}`
+    : 'https://paypal.me/qdeltastudio';
+
+  const payload: any = {
     name: lead.name,
     email: lead.email,
     company: lead.company || null,
     phone: lead.phone || null,
     country: lead.country || null,
-    service_type: lead.serviceType,
+    service_type: lead.serviceType || 'Landing Pages & High Conversion',
     budget: lead.budget || null,
     timeline: lead.timeline || null,
-    details: lead.details || null,
-    source: lead.source || 'Manual CRM Entry',
+    details: lead.details || '',
+    source: lead.source || 'LinkedIn Outreach',
     status: lead.status || 'New Inquiry',
-    assigned_to: lead.assignedTo || 'Nagireddy Sai Prabhath',
-    paypal_payment_link: lead.paypalPaymentLink || null,
-    quote_amount: lead.quoteAmount || 0,
+    assigned_to: lead.assignedTo || null,
+    handling_mode: lead.handlingMode || 'In-House',
+    paypal_payment_link: lead.paypalPaymentLink || autoPaypal,
+    quote_amount: quoteAmt,
     currency: lead.currency || 'USD',
-    lead_score: lead.leadScore || 80,
+    lead_score: score,
   };
 
-  const { data, error } = await supabase.from('leads').insert(payload).select().single();
+  if (isValidUuid(lead.partnerAgencyId)) {
+    payload.partner_agency_id = lead.partnerAgencyId;
+  }
+  if (lead.referralCommissionRate !== undefined) {
+    payload.referral_commission_rate = lead.referralCommissionRate;
+  }
+  if (lead.referralCommissionAmount !== undefined) {
+    payload.referral_commission_amount = lead.referralCommissionAmount;
+  }
+
+  let { data, error } = await supabase.from('leads').insert(payload).select().single();
+
+  // If insert failed due to column incompatibility, fallback to essential schema fields
+  if (error) {
+    const fallbackPayload = {
+      name: payload.name,
+      email: payload.email,
+      company: payload.company,
+      phone: payload.phone,
+      service_type: payload.service_type,
+      budget: payload.budget,
+      timeline: payload.timeline,
+      details: payload.details,
+      source: payload.source,
+      status: payload.status,
+      assigned_to: payload.assigned_to,
+      paypal_payment_link: payload.paypal_payment_link,
+      quote_amount: payload.quote_amount,
+      currency: payload.currency,
+      lead_score: payload.lead_score,
+    };
+    const retry = await supabase.from('leads').insert(fallbackPayload).select().single();
+    if (!retry.error && retry.data) {
+      data = retry.data;
+      error = null;
+    }
+  }
+
   if (error || !data) {
     console.error('Supabase createLiveLead error:', error?.message || error?.details || error);
     return null;
@@ -239,23 +213,36 @@ export async function createLiveLead(lead: Omit<Lead, 'id' | 'createdAt' | 'upda
 export async function updateLiveLead(id: string, updates: Partial<Lead>): Promise<boolean> {
   if (!supabase) return false;
   const payload: any = { updated_at: new Date().toISOString() };
-  if (updates.leadType !== undefined) payload.lead_type = updates.leadType;
-  if (updates.status !== undefined) payload.status = updates.status;
   if (updates.name !== undefined) payload.name = updates.name;
   if (updates.email !== undefined) payload.email = updates.email;
   if (updates.company !== undefined) payload.company = updates.company;
   if (updates.phone !== undefined) payload.phone = updates.phone;
-  if (updates.country !== undefined) payload.country = updates.country;
+  if (updates.country !== undefined) payload.country = updates.country || null;
+  if (updates.status !== undefined) payload.status = updates.status;
   if (updates.serviceType !== undefined) payload.service_type = updates.serviceType;
   if (updates.budget !== undefined) payload.budget = updates.budget;
   if (updates.timeline !== undefined) payload.timeline = updates.timeline;
   if (updates.details !== undefined) payload.details = updates.details;
+  if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo || null;
+  if (updates.handlingMode !== undefined) payload.handling_mode = updates.handlingMode;
+  if (isValidUuid(updates.partnerAgencyId)) payload.partner_agency_id = updates.partnerAgencyId;
+  if (updates.referralCommissionRate !== undefined) payload.referral_commission_rate = updates.referralCommissionRate || null;
+  if (updates.referralCommissionAmount !== undefined) payload.referral_commission_amount = updates.referralCommissionAmount || null;
   if (updates.quoteAmount !== undefined) payload.quote_amount = updates.quoteAmount;
+  if (updates.currency !== undefined) payload.currency = updates.currency;
   if (updates.paypalPaymentLink !== undefined) payload.paypal_payment_link = updates.paypalPaymentLink;
-  if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo;
-  if (updates.leadScore !== undefined) payload.lead_score = updates.leadScore;
 
-  const { error } = await supabase.from('leads').update(payload).eq('id', id);
+  let { error } = await supabase.from('leads').update(payload).eq('id', id);
+  if (error) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.country;
+    delete fallbackPayload.handling_mode;
+    delete fallbackPayload.partner_agency_id;
+    delete fallbackPayload.referral_commission_rate;
+    delete fallbackPayload.referral_commission_amount;
+    const retry = await supabase.from('leads').update(fallbackPayload).eq('id', id);
+    if (!retry.error) error = null;
+  }
   return !error;
 }
 
@@ -265,228 +252,77 @@ export async function deleteLiveLead(id: string): Promise<boolean> {
   return !error;
 }
 
-// ------------------------------------------------------------------------------
-// Organizations Table Operations
-// ------------------------------------------------------------------------------
-
-export async function fetchLiveOrganizations(): Promise<Organization[] | null> {
-  if (!supabase) return null;
-  const { data, error } = await supabase.from('organizations').select('*').order('created_at', { ascending: false });
-  if (error || !data) return null;
-  return data.map(mapOrganizationRow);
-}
-
-export async function createLiveOrganization(org: Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>): Promise<Organization | null> {
-  if (!supabase) return null;
-  const payload: any = {
-    name: org.name || org.organizationName,
-    contact_person: org.contactPerson || org.primaryContactName || org.name || org.organizationName,
-    email: org.email,
-    phone: org.phone || null,
-    country: org.country || null,
-    avatar_url: org.avatarUrl || null,
-    lead_id: isValidUUID(org.leadId) ? org.leadId : null,
-    assigned_lead_partner: org.assignedLeadPartner || 'Nagireddy Sai Prabhath',
-    total_ltv: org.totalLtv || 0,
-    total_paid: org.totalPaid || 0,
-    onboarding_status: org.onboardingStatus,
-    contract_agreement: org.contractAgreement,
-    notes: org.notes || null,
-  };
-
-  const { data, error } = await supabase.from('organizations').insert(payload).select().single();
-  if (error || !data) {
-    console.error('Supabase createLiveOrganization error:', error?.message || error?.details || error);
-    return null;
-  }
-  return mapOrganizationRow(data);
-}
-
-export async function updateLiveOrganization(id: string, updates: Partial<Organization>): Promise<boolean> {
-  if (!supabase) return false;
-  const payload: any = { updated_at: new Date().toISOString() };
-  if (updates.name !== undefined) payload.name = updates.name;
-  if (updates.organizationName !== undefined) payload.name = updates.organizationName;
-  if (updates.contactPerson !== undefined) payload.contact_person = updates.contactPerson;
-  if (updates.primaryContactName !== undefined) payload.contact_person = updates.primaryContactName;
-  if (updates.email !== undefined) payload.email = updates.email;
-  if (updates.phone !== undefined) payload.phone = updates.phone;
-  if (updates.country !== undefined) payload.country = updates.country || null;
-  if (updates.totalLtv !== undefined) payload.total_ltv = updates.totalLtv;
-  if (updates.totalPaid !== undefined) payload.total_paid = updates.totalPaid;
-  if (updates.onboardingStatus !== undefined) payload.onboarding_status = updates.onboardingStatus;
-  if (updates.contractAgreement !== undefined) payload.contract_agreement = updates.contractAgreement;
-  if (updates.notes !== undefined) payload.notes = updates.notes;
-
-  const { error } = await supabase.from('organizations').update(payload).eq('id', id);
-  return !error;
-}
-
-export async function deleteLiveOrganization(id: string): Promise<boolean> {
-  if (!supabase) return false;
-  const { error } = await supabase.from('organizations').delete().eq('id', id);
-  return !error;
-}
-
-// ------------------------------------------------------------------------------
-// Individuals Table Operations
-// ------------------------------------------------------------------------------
-
-export async function fetchLiveIndividuals(): Promise<Individual[] | null> {
-  if (!supabase) return null;
-  const { data, error } = await supabase.from('individuals').select('*').order('created_at', { ascending: false });
-  if (error || !data) return null;
-  return data.map(mapIndividualRow);
-}
-
-export async function createLiveIndividual(indiv: Omit<Individual, 'id' | 'createdAt' | 'updatedAt'>): Promise<Individual | null> {
-  if (!supabase) return null;
-  const payload: any = {
-    name: indiv.name || indiv.primaryContactName || indiv.organizationName,
-    email: indiv.email,
-    phone: indiv.phone || null,
-    country: indiv.country || null,
-    avatar_url: indiv.avatarUrl || null,
-    lead_id: isValidUUID(indiv.leadId) ? indiv.leadId : null,
-    assigned_lead_partner: indiv.assignedLeadPartner || 'Nagireddy Sai Prabhath',
-    total_ltv: indiv.totalLtv || 0,
-    total_paid: indiv.totalPaid || 0,
-    onboarding_status: indiv.onboardingStatus,
-    contract_agreement: indiv.contractAgreement,
-    notes: indiv.notes || null,
-  };
-
-  const { data, error } = await supabase.from('individuals').insert(payload).select().single();
-  if (error || !data) {
-    console.error('Supabase createLiveIndividual error:', error?.message || error?.details || error);
-    return null;
-  }
-  return mapIndividualRow(data);
-}
-
-export async function updateLiveIndividual(id: string, updates: Partial<Individual>): Promise<boolean> {
-  if (!supabase) return false;
-  const payload: any = { updated_at: new Date().toISOString() };
-  if (updates.name !== undefined) payload.name = updates.name;
-  if (updates.primaryContactName !== undefined) payload.name = updates.primaryContactName;
-  if (updates.organizationName !== undefined) payload.name = updates.organizationName;
-  if (updates.email !== undefined) payload.email = updates.email;
-  if (updates.phone !== undefined) payload.phone = updates.phone;
-  if (updates.country !== undefined) payload.country = updates.country || null;
-  if (updates.totalLtv !== undefined) payload.total_ltv = updates.totalLtv;
-  if (updates.totalPaid !== undefined) payload.total_paid = updates.totalPaid;
-  if (updates.onboardingStatus !== undefined) payload.onboarding_status = updates.onboardingStatus;
-  if (updates.contractAgreement !== undefined) payload.contract_agreement = updates.contractAgreement;
-  if (updates.notes !== undefined) payload.notes = updates.notes;
-
-  const { error } = await supabase.from('individuals').update(payload).eq('id', id);
-  return !error;
-}
-
-export async function deleteLiveIndividual(id: string): Promise<boolean> {
-  if (!supabase) return false;
-  const { error } = await supabase.from('individuals').delete().eq('id', id);
-  return !error;
-}
-
-// ------------------------------------------------------------------------------
-// Unified Clients Service (Merges Organizations & Individuals)
-// ------------------------------------------------------------------------------
-
 export async function fetchLiveClients(): Promise<Client[] | null> {
   if (!supabase) return null;
-  const [orgsResult, indivsResult] = await Promise.all([
-    supabase.from('organizations').select('*').order('created_at', { ascending: false }),
-    supabase.from('individuals').select('*').order('created_at', { ascending: false }),
-  ]);
-
-  const orgs = (orgsResult.data || []).map(mapOrganizationRow);
-  const indivs = (indivsResult.data || []).map(mapIndividualRow);
-
-  const combined = [...orgs, ...indivs];
-  combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return combined;
+  const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+  if (error || !data) return null;
+  return data.map(mapClientRow);
 }
 
 export async function createLiveClient(client: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Promise<Client | null> {
-  if (client.type === 'Individual' || client.clientType === 'Individual') {
-    return createLiveIndividual(client as Omit<Individual, 'id' | 'createdAt' | 'updatedAt'>);
+  if (!supabase) return null;
+  const payload: any = {
+    organization_name: client.organizationName,
+    primary_contact_name: client.primaryContactName,
+    email: client.email,
+    phone: client.phone,
+    country: client.country || null,
+    avatar_url: client.avatarUrl,
+    tier: client.tier,
+    assigned_lead_partner: client.assignedLeadPartner,
+    total_ltv: client.totalLtv,
+    total_paid: client.totalPaid,
+    onboarding_status: client.onboardingStatus,
+    notes: client.notes,
+  };
+  if (isValidUuid(client.leadId)) {
+    payload.lead_id = client.leadId;
   }
-  return createLiveOrganization(client as Omit<Organization, 'id' | 'createdAt' | 'updatedAt'>);
+  let { data, error } = await supabase.from('clients').insert(payload).select().single();
+  if (error && payload.country !== undefined) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.country;
+    const retry = await supabase.from('clients').insert(fallbackPayload).select().single();
+    if (!retry.error && retry.data) {
+      data = retry.data;
+      error = null;
+    }
+  }
+  if (error || !data) {
+    console.error('Supabase createLiveClient error:', error?.message || error?.details || error);
+    return null;
+  }
+  return mapClientRow(data);
 }
 
 export async function updateLiveClient(id: string, updates: Partial<Client>): Promise<boolean> {
-  if (updates.type === 'Individual' || updates.clientType === 'Individual') {
-    return updateLiveIndividual(id, updates as Partial<Individual>);
+  if (!supabase) return false;
+  const payload: any = { updated_at: new Date().toISOString() };
+  if (updates.organizationName !== undefined) payload.organization_name = updates.organizationName;
+  if (updates.primaryContactName !== undefined) payload.primary_contact_name = updates.primaryContactName;
+  if (updates.email !== undefined) payload.email = updates.email;
+  if (updates.phone !== undefined) payload.phone = updates.phone;
+  if (updates.country !== undefined) payload.country = updates.country || null;
+  if (updates.totalLtv !== undefined) payload.total_ltv = updates.totalLtv;
+  if (updates.totalPaid !== undefined) payload.total_paid = updates.totalPaid;
+  if (updates.onboardingStatus !== undefined) payload.onboarding_status = updates.onboardingStatus;
+  if (updates.notes !== undefined) payload.notes = updates.notes;
+
+  let { error } = await supabase.from('clients').update(payload).eq('id', id);
+  if (error && payload.country !== undefined) {
+    const fallbackPayload = { ...payload };
+    delete fallbackPayload.country;
+    const retry = await supabase.from('clients').update(fallbackPayload).eq('id', id);
+    if (!retry.error) error = null;
   }
-  if (updates.type === 'Organization' || updates.clientType === 'Organization') {
-    return updateLiveOrganization(id, updates as Partial<Organization>);
-  }
-  // Try organization first, then individual if not found
-  const orgSuccess = await updateLiveOrganization(id, updates as Partial<Organization>);
-  if (orgSuccess) return true;
-  return updateLiveIndividual(id, updates as Partial<Individual>);
+  return !error;
 }
 
-export async function deleteLiveClient(id: string, type?: 'Organization' | 'Individual'): Promise<boolean> {
-  if (type === 'Individual') {
-    return deleteLiveIndividual(id);
-  }
-  if (type === 'Organization') {
-    return deleteLiveOrganization(id);
-  }
-  const orgSuccess = await deleteLiveOrganization(id);
-  if (orgSuccess) return true;
-  return deleteLiveIndividual(id);
+export async function deleteLiveClient(id: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('clients').delete().eq('id', id);
+  return !error;
 }
-
-// Helper to safely resolve whether a foreign key belongs to organizations or individuals table
-async function resolveEntityIds(
-  clientId?: string,
-  organizationId?: string,
-  individualId?: string,
-  clientType?: 'Organization' | 'Individual'
-): Promise<{ orgId: string | null; indivId: string | null; resolvedType: 'Organization' | 'Individual' }> {
-  if (!supabase) return { orgId: null, indivId: null, resolvedType: clientType || 'Organization' };
-
-  let targetOrgId: string | null = (organizationId && isValidUUID(organizationId)) ? organizationId : null;
-  let targetIndivId: string | null = (individualId && isValidUUID(individualId)) ? individualId : null;
-  let resolvedType: 'Organization' | 'Individual' = clientType || (targetIndivId ? 'Individual' : 'Organization');
-
-  const rawId = clientId;
-  if (!targetOrgId && !targetIndivId && rawId && isValidUUID(rawId)) {
-    if (clientType === 'Individual') {
-      targetIndivId = rawId;
-      resolvedType = 'Individual';
-    } else if (clientType === 'Organization') {
-      targetOrgId = rawId;
-      resolvedType = 'Organization';
-    } else {
-      // Intelligently check whether the UUID exists in organizations or individuals table
-      const { data: orgMatch } = await supabase.from('organizations').select('id').eq('id', rawId).maybeSingle();
-      if (orgMatch) {
-        targetOrgId = orgMatch.id;
-        resolvedType = 'Organization';
-      } else {
-        const { data: indivMatch } = await supabase.from('individuals').select('id').eq('id', rawId).maybeSingle();
-        if (indivMatch) {
-          targetIndivId = indivMatch.id;
-          resolvedType = 'Individual';
-        }
-      }
-    }
-  }
-
-  return {
-    orgId: targetOrgId,
-    indivId: targetIndivId,
-    resolvedType,
-  };
-}
-
-// ------------------------------------------------------------------------------
-// Projects Table Operations
-// ------------------------------------------------------------------------------
 
 export async function fetchLiveProjects(): Promise<Project[] | null> {
   if (!supabase) return null;
@@ -497,42 +333,31 @@ export async function fetchLiveProjects(): Promise<Project[] | null> {
 
 export async function createLiveProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project | null> {
   if (!supabase) return null;
-  const { orgId, indivId, resolvedType } = await resolveEntityIds(
-    project.clientId,
-    project.organizationId,
-    project.individualId,
-    project.clientType
-  );
-
-  const payload = {
-    client_type: resolvedType,
-    organization_id: orgId,
-    individual_id: indivId,
+  const payload: any = {
     title: project.title,
     service_pillar: project.servicePillar,
     contract_value: project.contractValue,
-    currency: project.currency || 'USD',
-    status: project.status || 'Planning',
-    progress_percent: project.progressPercent || 15,
+    currency: project.currency,
+    status: project.status,
+    progress_percent: project.progressPercent,
     start_date: project.startDate || null,
     target_launch_date: project.targetLaunchDate || null,
-    github_repo_url: project.githubRepoUrl || null,
-    figma_url: project.figmaUrl || null,
-    staging_url: project.stagingUrl || null,
-    milestones: project.milestones || [],
+    github_repo_url: project.githubRepoUrl,
+    figma_url: project.figmaUrl,
+    staging_url: project.stagingUrl,
+    milestones: project.milestones,
   };
-
-  const { data, error } = await supabase.from('projects').insert(payload).select().single();
-  if (error || !data) {
-    console.error('Supabase createLiveProject error:', error?.message || error?.details || error);
-    return null;
+  if (isValidUuid(project.clientId)) {
+    payload.client_id = project.clientId;
   }
+  const { data, error } = await supabase.from('projects').insert(payload).select().single();
+  if (error || !data) return null;
   return mapProjectRow(data);
 }
 
 export async function updateLiveProject(id: string, updates: Partial<Project>): Promise<boolean> {
   if (!supabase) return false;
-  const payload: any = { updated_at: new Date().toISOString() };
+  const payload: any = {};
   if (updates.status !== undefined) payload.status = updates.status;
   if (updates.progressPercent !== undefined) payload.progress_percent = updates.progressPercent;
   if (updates.title !== undefined) payload.title = updates.title;
@@ -556,10 +381,6 @@ export async function deleteLiveProject(id: string): Promise<boolean> {
   return !error;
 }
 
-// ------------------------------------------------------------------------------
-// Payments Table Operations
-// ------------------------------------------------------------------------------
-
 export async function fetchLivePayments(): Promise<Payment[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
@@ -569,34 +390,24 @@ export async function fetchLivePayments(): Promise<Payment[] | null> {
 
 export async function createLivePayment(payment: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment | null> {
   if (!supabase) return null;
-  const { orgId, indivId, resolvedType } = await resolveEntityIds(
-    payment.clientId,
-    payment.organizationId,
-    payment.individualId,
-    payment.clientType
-  );
-
-  const payload = {
-    project_id: isValidUUID(payment.projectId) ? payment.projectId : null,
-    client_type: resolvedType,
-    organization_id: orgId,
-    individual_id: indivId,
-    lead_id: isValidUUID(payment.leadId) ? payment.leadId : null,
+  const payload: any = {
     amount: payment.amount,
     currency: payment.currency || 'USD',
-    type: payment.type || 'Deposit (30%)',
+    type: payment.type || 'Deposit (50%)',
     status: payment.status || 'Pending',
     paypal_reference_id: payment.paypalReferenceId || null,
     payment_link: payment.paymentLink || null,
-    receipt_sent: payment.receiptSent || false,
+    receipt_sent: Boolean(payment.receiptSent),
     paid_at: payment.paidAt || null,
   };
-
-  const { data, error } = await supabase.from('payments').insert(payload).select().single();
-  if (error || !data) {
-    console.error('Supabase createLivePayment error:', error?.message || error?.details || error);
-    return null;
+  if (isValidUuid(payment.clientId)) {
+    payload.client_id = payment.clientId;
   }
+  if (isValidUuid(payment.leadId)) {
+    payload.lead_id = payment.leadId;
+  }
+  const { data, error } = await supabase.from('payments').insert(payload).select().single();
+  if (error || !data) return null;
   return mapPaymentRow(data);
 }
 
@@ -604,10 +415,12 @@ export async function updateLivePayment(id: string, updates: Partial<Payment>): 
   if (!supabase) return false;
   const payload: any = {};
   if (updates.status !== undefined) payload.status = updates.status;
-  if (updates.amount !== undefined) payload.amount = updates.amount;
   if (updates.paidAt !== undefined) payload.paid_at = updates.paidAt;
+  if (updates.paypalReferenceId !== undefined) payload.paypal_reference_id = updates.paypalReferenceId;
   if (updates.receiptSent !== undefined) payload.receipt_sent = updates.receiptSent;
   if (updates.paymentLink !== undefined) payload.payment_link = updates.paymentLink;
+  if (updates.amount !== undefined) payload.amount = updates.amount;
+  if (updates.currency !== undefined) payload.currency = updates.currency;
 
   const { error } = await supabase.from('payments').update(payload).eq('id', id);
   return !error;
@@ -619,158 +432,115 @@ export async function deleteLivePayment(id: string): Promise<boolean> {
   return !error;
 }
 
-export async function fetchLiveActivityLogs(filters?: {
-  leadId?: string;
-  organizationId?: string;
-  individualId?: string;
-  projectId?: string;
-  limit?: number;
-}): Promise<ActivityLog[] | null> {
+export async function fetchLivePartners(): Promise<PartnerAgency[] | null> {
   if (!supabase) return null;
-  let query = supabase.from('activity_logs').select('*').order('created_at', { ascending: false });
-
-  if (filters?.leadId && isValidUUID(filters.leadId)) {
-    query = query.eq('lead_id', filters.leadId);
-  }
-  if (filters?.organizationId && isValidUUID(filters.organizationId)) {
-    query = query.eq('organization_id', filters.organizationId);
-  }
-  if (filters?.individualId && isValidUUID(filters.individualId)) {
-    query = query.eq('individual_id', filters.individualId);
-  }
-  if (filters?.projectId && isValidUUID(filters.projectId)) {
-    query = query.eq('project_id', filters.projectId);
-  }
-
-  if (filters?.limit) {
-    query = query.limit(filters.limit);
-  } else if (!filters?.leadId && !filters?.organizationId && !filters?.individualId && !filters?.projectId) {
-    query = query.limit(100);
-  }
-
-  const { data, error } = await query;
+  const { data, error } = await supabase.from('partner_agencies').select('*').order('created_at', { ascending: false });
   if (error || !data) return null;
-  return data.map(mapActivityLogRow);
+  return data.map(mapPartnerRow);
 }
 
-export async function createLiveActivityLog(log: {
-  title: string;
-  description: string;
-  category?: string;
-  actionType?: string;
-  leadId?: string;
-  organizationId?: string;
-  individualId?: string;
-  projectId?: string;
-  partner?: string;
-  performedBy?: string;
-}): Promise<ActivityLog | null> {
+export async function createLivePartner(
+  partner: Omit<PartnerAgency, 'id' | 'createdAt' | 'totalReferredLeads' | 'totalCommissionEarned' | 'totalCommissionPaid'>
+): Promise<PartnerAgency | null> {
   if (!supabase) return null;
   const payload = {
-    title: log.title,
-    description: log.description,
-    category: log.category || 'lead',
-    action_type: log.actionType || 'general',
-    lead_id: log.leadId && isValidUUID(log.leadId) ? log.leadId : null,
-    organization_id: log.organizationId && isValidUUID(log.organizationId) ? log.organizationId : null,
-    individual_id: log.individualId && isValidUUID(log.individualId) ? log.individualId : null,
-    project_id: log.projectId && isValidUUID(log.projectId) ? log.projectId : null,
-    performed_by: log.performedBy || log.partner || 'Nagireddy Sai Prabhath',
+    name: partner.name,
+    contact_person: partner.contactPerson,
+    email: partner.email,
+    specialization: partner.specialization,
+    default_commission_rate: partner.defaultCommissionRate || 10,
+    total_referred_leads: 0,
+    total_commission_earned: 0,
+    total_commission_paid: 0,
   };
-  const { data, error } = await supabase.from('activity_logs').insert(payload).select().single();
+  const { data, error } = await supabase.from('partner_agencies').insert(payload).select().single();
   if (error || !data) {
-    console.error('Failed to insert activity_log:', error);
+    console.error('Supabase createLivePartner error:', error);
     return null;
   }
-  return mapActivityLogRow(data);
+  return mapPartnerRow(data);
 }
 
-// Backward compatibility helpers
-export async function fetchLiveLeadActivities(leadId?: string): Promise<ActivityLog[] | null> {
-  return fetchLiveActivityLogs(leadId ? { leadId } : undefined);
-}
+export async function updateLivePartner(id: string, updates: Partial<PartnerAgency>): Promise<boolean> {
+  if (!supabase) return false;
+  const payload: any = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.contactPerson !== undefined) payload.contact_person = updates.contactPerson;
+  if (updates.email !== undefined) payload.email = updates.email;
+  if (updates.specialization !== undefined) payload.specialization = updates.specialization;
+  if (updates.defaultCommissionRate !== undefined) payload.default_commission_rate = updates.defaultCommissionRate;
+  if (updates.totalReferredLeads !== undefined) payload.total_referred_leads = updates.totalReferredLeads;
+  if (updates.totalCommissionEarned !== undefined) payload.total_commission_earned = updates.totalCommissionEarned;
+  if (updates.totalCommissionPaid !== undefined) payload.total_commission_paid = updates.totalCommissionPaid;
 
-export async function createLiveLeadActivity(activity: any): Promise<ActivityLog | null> {
-  return createLiveActivityLog({
-    title: activity.title,
-    description: activity.description,
-    category: 'lead',
-    actionType: activity.actionType || 'note_added',
-    leadId: activity.leadId,
-    organizationId: activity.organizationId || activity.clientId,
-    individualId: activity.individualId,
-    performedBy: activity.performedBy || activity.partner,
-  });
-}
-
-export async function deleteLiveLeadActivities(leadId: string): Promise<boolean> {
-  if (!supabase || !isValidUUID(leadId)) return false;
-  const { error } = await supabase.from('activity_logs').delete().eq('lead_id', leadId);
+  const { error } = await supabase.from('partner_agencies').update(payload).eq('id', id);
   return !error;
 }
 
-export async function fetchLivePartners(): Promise<any[] | null> {
-  return [];
-}
-
-export async function createLivePartner(partner: any): Promise<any | null> {
-  return null;
-}
-
-export async function updateLivePartner(id: string, updates: any): Promise<boolean> {
-  return true;
-}
-
 export async function deleteLivePartner(id: string): Promise<boolean> {
-  return true;
+  if (!supabase) return false;
+  const { error } = await supabase.from('partner_agencies').delete().eq('id', id);
+  return !error;
 }
 
-// ------------------------------------------------------------------------------
-// Strict Realtime Multi-Table Subscriptions
-// ------------------------------------------------------------------------------
+// --- Lead Activities Handlers (Audit Trail) ---
 
-export function subscribeToLiveCRM(callbacks: {
-  onLeadsChange?: () => void;
-  onOrganizationsChange?: () => void;
-  onIndividualsChange?: () => void;
-  onProjectsChange?: () => void;
-  onPaymentsChange?: () => void;
-  onActivityLogsChange?: () => void;
-  onAnyChange?: () => void;
-}): () => void {
-  if (!supabase) return () => {};
-
-  const channel = supabase
-    .channel('crm_realtime_stream')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-      callbacks.onLeadsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'organizations' }, () => {
-      callbacks.onOrganizationsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'individuals' }, () => {
-      callbacks.onIndividualsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-      callbacks.onProjectsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
-      callbacks.onPaymentsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
-      callbacks.onActivityLogsChange?.();
-      callbacks.onAnyChange?.();
-    })
-    .subscribe();
-
-  return () => {
-    supabase?.removeChannel(channel);
+export function mapLeadActivityRow(row: any): LeadActivity {
+  return {
+    id: row.id,
+    leadId: row.lead_id,
+    clientId: row.client_id || undefined,
+    actionType: row.action_type || 'note_added',
+    title: row.title,
+    description: row.description,
+    performedBy: row.performed_by || 'Nagireddy Sai Prabhath',
+    createdAt: row.created_at,
   };
 }
+
+export async function fetchLiveLeadActivities(leadId?: string, clientId?: string): Promise<LeadActivity[] | null> {
+  if (!supabase) return null;
+  let query = supabase.from('lead_activities').select('*').order('created_at', { ascending: false });
+  if (leadId && isValidUuid(leadId)) {
+    query = query.eq('lead_id', leadId);
+  } else if (clientId && isValidUuid(clientId)) {
+    query = query.eq('client_id', clientId);
+  }
+  const { data, error } = await query;
+  if (error || !data) return null;
+  return data.map(mapLeadActivityRow);
+}
+
+export async function createLiveLeadActivity(
+  activity: Omit<LeadActivity, 'id' | 'createdAt'>
+): Promise<LeadActivity | null> {
+  if (!supabase) return null;
+  const payload: any = {
+    action_type: activity.actionType || 'note_added',
+    title: activity.title,
+    description: activity.description,
+    performed_by: activity.performedBy || 'Nagireddy Sai Prabhath',
+  };
+  if (isValidUuid(activity.leadId)) {
+    payload.lead_id = activity.leadId;
+  }
+  if (isValidUuid(activity.clientId)) {
+    payload.client_id = activity.clientId;
+  }
+  const { data, error } = await supabase.from('lead_activities').insert(payload).select().single();
+  if (error || !data) {
+    console.error('Supabase createLiveLeadActivity error:', error?.message || error);
+    return null;
+  }
+  return mapLeadActivityRow(data);
+}
+
+export async function deleteLiveLeadActivities(leadId: string): Promise<boolean> {
+  if (!supabase) return false;
+  if (!isValidUuid(leadId)) return false;
+  const { error } = await supabase.from('lead_activities').delete().eq('lead_id', leadId);
+  return !error;
+}
+
 
 

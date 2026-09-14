@@ -4,15 +4,18 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  UserPlusIcon,
+  BellIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+  ChevronRightIcon,
+  LockClosedIcon,
+  ShieldCheckIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
+import {
   PanelLeft,
   PanelLeftOpen,
-  Search,
-  Sparkles,
-  Bell,
-  LogOut,
-  Plus,
-  ChevronRight,
-  Shield,
 } from 'lucide-react';
 import { useCRM } from '@/lib/store';
 import { useAgencyAuth } from '@/components/auth/agency-auth-guard';
@@ -21,26 +24,33 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 const SEGMENT_NAMES: Record<string, string> = {
   '': 'Overview',
-  'organizations': 'Organizations',
-  'individuals': 'Individuals',
-  'client-hub': 'Organizations',
+  'client-hub': 'Client Hub',
   'ai-studio': 'AI Studio',
   'leads': 'Lead Pipeline',
-  'clients': 'Organizations',
+  'clients': 'Clients',
   'projects': 'Projects',
   'payments': 'Payments',
+  'partners': 'Agency Network',
   'reports': 'Reports',
+  '1': 'Acme Corp',
+  '2': 'Vortex Dynamics',
+  '3': 'Starlight E-commerce',
+  'p1': 'Hostel App',
+  'p2': 'E-commerce Redesign',
+  'p3': 'Marketing Site SEO',
+  'p4': 'Cloud Infrastructure',
+  'p5': 'Vortex App',
+  'p6': 'Checkout Optimization',
 };
 
 const SECTION_MAP: Record<string, string> = {
   '': 'Workspace',
   'leads': 'Workspace',
-  'organizations': 'Workspace',
-  'individuals': 'Workspace',
   'clients': 'Workspace',
   'projects': 'Workspace',
   'client-hub': 'Workspace',
   'payments': 'Operations',
+  'partners': 'Operations',
   'ai-studio': 'Intelligence',
   'reports': 'Intelligence',
 };
@@ -118,7 +128,7 @@ export function Topbar() {
               const isLast = idx === breadcrumbs.length - 1;
               return (
                 <React.Fragment key={crumb.href}>
-                  <ChevronRight className="h-3.5 w-3.5 text-zinc-300 dark:text-[#3F3F46] shrink-0" />
+                  <ChevronRightIcon className="h-3.5 w-3.5 text-zinc-300 dark:text-[#3F3F46] shrink-0" />
                   {isLast ? (
                     <span className="font-semibold text-zinc-900 dark:text-[#F5F5F5] tracking-tight truncate">
                       {crumb.label}
@@ -144,7 +154,7 @@ export function Topbar() {
             className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-zinc-200/90 dark:border-[#2C2C31] bg-[#ECEEF2] dark:bg-[#1C1C1F] hover:bg-[#E5E8EC] dark:hover:bg-[#232327] hover:border-zinc-300 dark:hover:border-[#3F3F46] text-xs text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-950 dark:hover:text-[#F5F5F5] transition-all cursor-pointer group shadow-2xs"
           >
             <div className="flex items-center gap-2.5 truncate">
-              <Search className="h-3.5 w-3.5 text-zinc-400 dark:text-[#71717A] group-hover:text-zinc-700 dark:group-hover:text-[#F5F5F5] transition-colors shrink-0" />
+              <MagnifyingGlassIcon className="h-3.5 w-3.5 text-zinc-400 dark:text-[#71717A] group-hover:text-zinc-700 dark:group-hover:text-[#F5F5F5] transition-colors shrink-0" />
               <span className="truncate">Search leads, clients, projects, payments...</span>
             </div>
             <kbd className="inline-flex items-center gap-0.5 text-[10px] font-mono font-medium bg-zinc-200/90 dark:bg-[#232327] border border-zinc-300/80 dark:border-[#2C2C31] px-1.5 py-0.5 rounded text-zinc-700 dark:text-[#71717A] shrink-0">
@@ -161,7 +171,7 @@ export function Topbar() {
             className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200/90 dark:border-[#2C2C31] bg-[#F4F5F7] dark:bg-[#1C1C1F] hover:bg-[#ECEEF2] dark:hover:bg-[#232327] hover:border-zinc-300 dark:hover:border-[#3F3F46] text-xs font-medium text-zinc-600 dark:text-[#A1A1AA] hover:text-zinc-900 dark:hover:text-[#F5F5F5] transition-all duration-150 shadow-2xs group"
             title="Google AI Assistant & SOW Generator"
           >
-            <Sparkles className="h-3.5 w-3.5 text-zinc-400 dark:text-[#8B8B94] group-hover:text-amber-500 dark:group-hover:text-[#F5F5F5] transition-colors" />
+            <SparklesIcon className="h-3.5 w-3.5 text-zinc-400 dark:text-[#8B8B94] group-hover:text-amber-500 dark:group-hover:text-[#F5F5F5] transition-colors" />
             <span>AI Studio</span>
           </Link>
 
@@ -178,8 +188,9 @@ export function Topbar() {
                 type="button"
                 onClick={logout}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/70 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-xs font-semibold text-rose-700 dark:text-rose-300 transition-all cursor-pointer shadow-2xs group"
+                title={`Logged in as ${authenticatedUser} — Click to Logout & Lock Dashboard`}
               >
-                <LogOut className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRightOnRectangleIcon className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400 group-hover:translate-x-0.5 transition-transform" />
                 <span>Logout</span>
               </button>
             </div>
@@ -192,7 +203,7 @@ export function Topbar() {
               className="p-2 rounded-lg text-zinc-500 dark:text-[#8B8B94] hover:text-zinc-900 dark:hover:text-[#F5F5F5] hover:bg-zinc-100 dark:hover:bg-[#1C1C1F] transition-all relative cursor-pointer border border-transparent hover:border-zinc-200 dark:hover:border-[#2C2C31]"
               title="Live Activity Feed"
             >
-              <Bell className="h-4 w-4" />
+              <BellIcon className="h-4 w-4" />
               {activityLogs.length > 0 && (
                 <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500 dark:bg-[#F5F5F5] ring-2 ring-white dark:ring-[#111112]" />
               )}
@@ -211,9 +222,7 @@ export function Topbar() {
                       <div key={log.id} className="py-2.5">
                         <p className="font-medium text-zinc-800 dark:text-[#F5F5F5]">{log.title}</p>
                         <p className="text-zinc-500 dark:text-[#A1A1AA] text-[11px] mt-0.5 line-clamp-2">{log.description}</p>
-                        <span className="text-[10px] text-zinc-400 dark:text-[#71717A] font-mono mt-1 block">
-                          {log.timestamp === 'Just now' ? 'Just now' : new Date(log.timestamp || log.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <span className="text-[10px] text-zinc-400 dark:text-[#71717A] font-mono mt-1 block">{log.timestamp}</span>
                       </div>
                     ))}
                   </div>
@@ -227,7 +236,7 @@ export function Topbar() {
             href="/leads"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-zinc-950 text-xs font-semibold shadow-xs transition-all duration-150 cursor-pointer group"
           >
-            <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+            <UserPlusIcon className="h-3.5 w-3.5 stroke-[2.5]" />
             <span className="hidden sm:inline">New Lead</span>
             <span className="sm:hidden">New</span>
           </Link>
@@ -239,3 +248,4 @@ export function Topbar() {
     </>
   );
 }
+

@@ -15,6 +15,7 @@ import {
   TeamMemberName,
   PaymentStatus,
   ProjectStatus,
+  ClientTier,
 } from './types';
 import {
   INITIAL_LEADS,
@@ -50,9 +51,6 @@ import {
   fetchLiveLeadActivities,
   createLiveLeadActivity,
   deleteLiveLeadActivities,
-  fetchLiveActivityLogs,
-  createLiveActivityLog,
-  subscribeToLiveCRM,
 } from './supabase-service';
 
 type ConvertResult = { client: Client; project: Project } | null;
@@ -77,21 +75,7 @@ interface CRMContextType {
   updateLeadStatus: (id: string, status: LeadStatus) => void;
   generateLeadPayPalLink: (leadId: string, amount?: number, currency?: string) => string;
   transferLeadToPartner: (leadId: string, partnerAgencyId: string, referralRate?: number) => void;
-  logActivity: (
-    title: string,
-    description: string,
-    category?: ActivityLog['category'],
-    partner?: TeamMemberName | string,
-    meta?: {
-      actionType?: string;
-      leadId?: string;
-      organizationId?: string;
-      individualId?: string;
-      projectId?: string;
-    }
-  ) => void;
   addLeadActivity: (activity: Omit<LeadActivity, 'id' | 'createdAt'>) => void;
-
   convertLeadToClient: (
     leadId: string,
     projectTitle?: string,
@@ -222,13 +206,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const refreshData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [liveLeads, liveClients, liveProjects, livePayments, livePartners, liveLogs] = await Promise.all([
+      const [liveLeads, liveClients, liveProjects, livePayments, livePartners, liveActivities] = await Promise.all([
         fetchLiveLeads(),
         fetchLiveClients(),
         fetchLiveProjects(),
         fetchLivePayments(),
         fetchLivePartners(),
-        fetchLiveActivityLogs(),
+        fetchLiveLeadActivities(),
       ]);
 
       setLeads(liveLeads ?? []);
@@ -236,13 +220,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       setProjects(liveProjects ?? []);
       setPayments(livePayments ?? []);
       setPartnerAgencies(livePartners ?? []);
-      if (liveLogs && liveLogs.length > 0) {
-        setActivityLogs(liveLogs);
-        setLeadActivities(liveLogs.filter((l) => Boolean(l.leadId)));
-      } else {
-        setActivityLogs([]);
-        setLeadActivities([]);
-      }
+      setLeadActivities(liveActivities ?? []);
     } catch (err) {
       console.error('Error fetching live data from Supabase:', err);
     } finally {
@@ -251,94 +229,44 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Load live data on mount & subscribe to Supabase Realtime multi-table stream
+  // Load live data on mount
   useEffect(() => {
     refreshData();
-
-    // Strict Realtime: any INSERT, UPDATE, or DELETE on PostgreSQL immediately triggers a live state sync
-    const unsubscribe = subscribeToLiveCRM({
-      onAnyChange: () => {
-        refreshData();
-      },
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, [refreshData]);
 
   const logActivity = (
     title: string,
     description: string,
-    category: ActivityLog['category'] = 'system',
-    partner?: TeamMemberName | string,
-    meta?: {
-      actionType?: string;
-      leadId?: string;
-      organizationId?: string;
-      individualId?: string;
-      projectId?: string;
-    }
+    category: ActivityLog['category'],
+    partner?: TeamMemberName
   ) => {
-    const tempId = `log-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
     const newLog: ActivityLog = {
-      id: tempId,
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
       title,
       description,
       category,
-      actionType: meta?.actionType || 'general',
-      leadId: meta?.leadId,
-      organizationId: meta?.organizationId,
-      individualId: meta?.individualId,
-      projectId: meta?.projectId,
       timestamp: 'Just now',
-      createdAt: new Date().toISOString(),
-      partner: partner || 'Nagireddy Sai Prabhath',
-      performedBy: partner || 'Nagireddy Sai Prabhath',
+      partner,
     };
-
-    setActivityLogs((prev) => [newLog, ...prev.slice(0, 99)]);
-    if (meta?.leadId) {
-      setLeadActivities((prev) => [newLog, ...prev]);
-    }
-
-    // Persist to live Supabase activity_logs table
-    createLiveActivityLog({
-      title,
-      description,
-      category,
-      actionType: meta?.actionType || 'general',
-      leadId: meta?.leadId,
-      organizationId: meta?.organizationId,
-      individualId: meta?.individualId,
-      projectId: meta?.projectId,
-      performedBy: partner || 'Nagireddy Sai Prabhath',
-    }).then((saved) => {
-      if (saved) {
-        setActivityLogs((prev) => prev.map((l) => (l.id === tempId ? saved : l)));
-        if (meta?.leadId) {
-          setLeadActivities((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
-        }
-      }
-    });
+    setActivityLogs((prev) => [newLog, ...prev.slice(0, 49)]);
   };
 
   const addLeadActivity = (activity: Omit<LeadActivity, 'id' | 'createdAt'>) => {
-    logActivity(
-      activity.title,
-      activity.description,
-      'lead',
-      activity.performedBy || activity.partner,
-      {
-        actionType: activity.actionType || 'note_added',
-        leadId: activity.leadId,
-        organizationId: activity.organizationId,
-        individualId: activity.individualId,
-        projectId: activity.projectId,
-      }
-    );
+    const tempId = `act-${Date.now()}`;
+    const newAct: LeadActivity = {
+      ...activity,
+      id: tempId,
+      createdAt: new Date().toISOString(),
+    };
+    setLeadActivities((prev) => [newAct, ...prev]);
+    if (activity.leadId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(activity.leadId)) {
+      createLiveLeadActivity(activity).then((saved) => {
+        if (saved) {
+          setLeadActivities((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
+        }
+      });
+    }
   };
-
 
   // ==========================================
   // LEAD ACTIONS (Direct Database Operations)
@@ -383,6 +311,13 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       if (saved) {
         setLeads((prev) => prev.map((l) => (l.id === tempId ? saved : l)));
         setLeadActivities((prev) => prev.map((a) => (a.leadId === tempId ? { ...a, leadId: saved.id } : a)));
+        createLiveLeadActivity({
+          leadId: saved.id,
+          actionType: 'created',
+          title: 'Inbound Lead Created',
+          description: `Lead created from ${saved.source || 'Outreach'} with agreed budget of ${saved.budget || '$0'}. 1st deposit (30%): $${quoteAmt.toLocaleString()} ${saved.currency || 'USD'}.`,
+          performedBy: saved.assignedTo || 'Nagireddy Sai Prabhath',
+        });
       }
     });
 
@@ -502,19 +437,10 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     const deposit2Val = Math.round(contractVal * 0.35);
     const deposit3Val = contractVal - deposit1Val - deposit2Val;
 
-    // 1. Check if organization or individual client already exists in clients
-    const isOrg = lead.leadType === 'Organization' || (Boolean(lead.company) && lead.company !== lead.name);
-    const resolvedClientType = isOrg ? 'Organization' : 'Individual';
-
-    const existingClient = clients.find((c) => {
-      if (isOrg && lead.company) {
-        return c.organizationName.toLowerCase().trim() === lead.company.toLowerCase().trim();
-      }
-      return (
-        (lead.email && c.email.toLowerCase().trim() === lead.email.toLowerCase().trim()) ||
-        (lead.name && c.primaryContactName.toLowerCase().trim() === lead.name.toLowerCase().trim())
-      );
-    });
+    // 1. Check if organization already exists in clients
+    const existingClient = lead.company && lead.company !== lead.name
+      ? clients.find((c) => c.organizationName.toLowerCase() === (lead.company || '').toLowerCase().trim())
+      : null;
 
     let activeClient: Client;
 
@@ -531,19 +457,14 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         totalPaid: activeClient.totalPaid,
       });
     } else {
-      const orgName = lead.company || lead.name;
-      const contactPerson = lead.name;
       activeClient = {
         id: `client-${Date.now()}`,
-        type: resolvedClientType,
-        name: orgName,
-        contactPerson: contactPerson,
-        clientType: resolvedClientType,
-        organizationName: orgName,
-        primaryContactName: contactPerson,
+        organizationName: lead.company || lead.name,
+        primaryContactName: lead.name,
         email: lead.email,
         phone: lead.phone,
         country: lead.country,
+        tier: contractVal >= 10000 ? 'VIP Flagship' : 'Growth Studio',
         leadId: lead.id,
         assignedLeadPartner: lead.assignedTo,
         totalLtv: contractVal,
@@ -571,15 +492,12 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       setClients((prev) => [activeClient, ...prev]);
 
       createLiveClient({
-        type: activeClient.type,
-        name: activeClient.name,
-        contactPerson: activeClient.contactPerson,
-        clientType: activeClient.clientType,
         organizationName: activeClient.organizationName,
         primaryContactName: activeClient.primaryContactName,
         email: activeClient.email,
         phone: activeClient.phone,
         country: activeClient.country,
+        tier: activeClient.tier,
         leadId: activeClient.leadId,
         assignedLeadPartner: activeClient.assignedLeadPartner,
         totalLtv: activeClient.totalLtv,
@@ -589,7 +507,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
       }).then((savedClient) => {
         if (savedClient) {
           setClients((prev) => prev.map((c) => (c.id === activeClient.id ? savedClient : c)));
-          syncProjectAndPayments(savedClient.id);
         }
       });
     }
@@ -686,87 +603,67 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     // 4. Update Lead Status in Database & React state
     updateLead(leadId, { status: 'Converted' });
 
-    // Function to persist project, payments, and activity to Supabase with valid UUID
-    const syncProjectAndPayments = (effectiveClientId: string) => {
-      createLiveProject({
-        clientId: effectiveClientId,
-        clientType: activeClient.clientType,
-        organizationId: activeClient.clientType === 'Organization' ? effectiveClientId : undefined,
-        individualId: activeClient.clientType === 'Individual' ? effectiveClientId : undefined,
-        title: newProject.title,
-        servicePillar: newProject.servicePillar,
-        contractValue: newProject.contractValue,
-        currency: newProject.currency,
-        status: newProject.status,
-        progressPercent: newProject.progressPercent,
-        startDate: newProject.startDate,
-        targetLaunchDate: newProject.targetLaunchDate,
-        milestones: newProject.milestones,
-      }).then((savedProj) => {
-        if (savedProj) {
-          setProjects((prev) => prev.map((p) => (p.id === newProject.id ? savedProj : p)));
-        }
-      });
+    // Commit Project & Payments to Supabase in Background
+    createLiveProject({
+      clientId: activeClient.id,
+      title: newProject.title,
+      servicePillar: newProject.servicePillar,
+      contractValue: newProject.contractValue,
+      currency: newProject.currency,
+      status: newProject.status,
+      progressPercent: newProject.progressPercent,
+      startDate: newProject.startDate,
+      targetLaunchDate: newProject.targetLaunchDate,
+      milestones: newProject.milestones,
+    }).then((savedProj) => {
+      if (savedProj) {
+        setProjects((prev) => prev.map((p) => (p.id === newProject.id ? savedProj : p)));
+      }
+    });
 
-      createLivePayment({
-        clientId: effectiveClientId,
-        clientType: activeClient.clientType,
-        organizationId: activeClient.clientType === 'Organization' ? effectiveClientId : undefined,
-        individualId: activeClient.clientType === 'Individual' ? effectiveClientId : undefined,
-        leadId: lead.id,
-        amount: depositPayment.amount,
-        currency: depositPayment.currency,
-        type: 'Deposit (30%)',
-        status: 'Paid',
-        paypalReferenceId: depositPayment.paypalReferenceId,
-        paymentLink: depositPayment.paymentLink,
-        receiptSent: true,
-        paidAt: depositPayment.paidAt,
-      });
+    createLivePayment({
+      clientId: activeClient.id,
+      leadId: lead.id,
+      amount: depositPayment.amount,
+      currency: depositPayment.currency,
+      type: 'Deposit (30%)',
+      status: 'Paid',
+      paypalReferenceId: depositPayment.paypalReferenceId,
+      paymentLink: depositPayment.paymentLink,
+      receiptSent: true,
+      paidAt: depositPayment.paidAt,
+    });
 
-      createLivePayment({
-        clientId: effectiveClientId,
-        clientType: activeClient.clientType,
-        organizationId: activeClient.clientType === 'Organization' ? effectiveClientId : undefined,
-        individualId: activeClient.clientType === 'Individual' ? effectiveClientId : undefined,
-        leadId: lead.id,
-        amount: milestone2Payment.amount,
-        currency: milestone2Payment.currency,
-        type: 'Milestone 2 (35%)',
-        status: 'Pending',
-        paymentLink: milestone2Payment.paymentLink,
-        receiptSent: false,
-      });
+    createLivePayment({
+      clientId: activeClient.id,
+      leadId: lead.id,
+      amount: milestone2Payment.amount,
+      currency: milestone2Payment.currency,
+      type: 'Milestone 2 (35%)',
+      status: 'Pending',
+      paymentLink: milestone2Payment.paymentLink,
+      receiptSent: false,
+    });
 
-      createLivePayment({
-        clientId: effectiveClientId,
-        clientType: activeClient.clientType,
-        organizationId: activeClient.clientType === 'Organization' ? effectiveClientId : undefined,
-        individualId: activeClient.clientType === 'Individual' ? effectiveClientId : undefined,
-        leadId: lead.id,
-        amount: finalMilestonePayment.amount,
-        currency: finalMilestonePayment.currency,
-        type: 'Final Launch (35%)',
-        status: 'Pending',
-        paymentLink: finalMilestonePayment.paymentLink,
-        receiptSent: false,
-      });
+    createLivePayment({
+      clientId: activeClient.id,
+      leadId: lead.id,
+      amount: finalMilestonePayment.amount,
+      currency: finalMilestonePayment.currency,
+      type: 'Final Launch (35%)',
+      status: 'Pending',
+      paymentLink: finalMilestonePayment.paymentLink,
+      receiptSent: false,
+    });
 
-      addLeadActivity({
-        leadId: lead.id,
-        clientId: effectiveClientId,
-        organizationId: activeClient.clientType === 'Organization' ? effectiveClientId : undefined,
-        individualId: activeClient.clientType === 'Individual' ? effectiveClientId : undefined,
-        actionType: 'converted',
-        title: '🎉 Lead Converted to Active Client',
-        description: `${lead.name} (${activeClient.organizationName}) converted to active client. 3-stage milestone payment plan scheduled ($${deposit1Val.toLocaleString()} Kickoff / $${deposit2Val.toLocaleString()} Mid-Dev / $${deposit3Val.toLocaleString()} Launch).`,
-        performedBy: lead.assignedTo || 'Nagireddy Sai Prabhath',
-      });
-    };
-
-    if (existingClient && existingClient.id && !existingClient.id.startsWith('client-')) {
-      syncProjectAndPayments(existingClient.id);
-    }
+    addLeadActivity({
+      leadId: lead.id,
+      clientId: activeClient.id,
+      actionType: 'converted',
+      title: '🎉 Lead Converted to Active Client',
+      description: `${lead.name} (${activeClient.organizationName}) converted to active client. 3-stage milestone payment plan scheduled ($${deposit1Val.toLocaleString()} Kickoff / $${deposit2Val.toLocaleString()} Mid-Dev / $${deposit3Val.toLocaleString()} Launch).`,
+      performedBy: lead.assignedTo || 'Nagireddy Sai Prabhath',
+    });
 
     logActivity(
       '🎉 Lead Converted to Active Client!',
@@ -788,7 +685,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
     updateLead(leadId, {
       status: 'Referred Out',
       handlingMode: 'Referred Out',
-      referringPartner: partner.name,
+      partnerAgencyId: partner.id,
       referralCommissionRate: referralRate,
       referralCommissionAmount: commissionAmount,
     });
@@ -818,34 +715,17 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const addClient = (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>): Client => {
     const tempId = `client-${Date.now()}`;
     const now = new Date().toISOString();
-    const type = clientData.type || clientData.clientType || 'Organization';
-    const name = clientData.name || clientData.organizationName || '';
-    const contactPerson = clientData.contactPerson || clientData.primaryContactName || name;
     const newClient: Client = {
       ...clientData,
-      type,
-      name,
-      contactPerson,
-      organizationName: name,
-      primaryContactName: contactPerson,
-      clientType: type,
       id: tempId,
       createdAt: now,
       updatedAt: now,
     };
 
     setClients((prev) => [newClient, ...prev]);
-    logActivity('New Account Added', `${newClient.organizationName} profile created.`, 'project', newClient.assignedLeadPartner);
+    logActivity('New Client Added', `${newClient.organizationName} profile created.`, 'project', newClient.assignedLeadPartner);
 
-    createLiveClient({
-      ...clientData,
-      type,
-      name,
-      contactPerson,
-      organizationName: name,
-      primaryContactName: contactPerson,
-      clientType: type,
-    }).then((saved) => {
+    createLiveClient(clientData).then((saved) => {
       if (saved) {
         setClients((prev) => prev.map((c) => (c.id === tempId ? saved : c)));
       }
@@ -865,11 +745,11 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
   const deleteClient = (id: string) => {
     const target = clients.find((c) => c.id === id);
-    setClients((prev) => prev.filter((client) => client.id !== id));
-    deleteLiveClient(id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
     if (target) {
       logActivity('Client Removed', `${target.organizationName} was removed.`, 'project');
     }
+    deleteLiveClient(id);
   };
 
   const toggleOnboardingItem = (clientId: string, key: keyof Client['onboardingStatus']) => {
@@ -896,14 +776,8 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const addProject = (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Project => {
     const tempId = `proj-${Date.now()}`;
     const now = new Date().toISOString();
-    const matchingClient = clients.find((c) => c.id === projectData.clientId);
-    const resolvedType = projectData.clientType || (matchingClient ? matchingClient.clientType : undefined);
-
     const newProj: Project = {
       ...projectData,
-      clientType: resolvedType,
-      organizationId: projectData.organizationId || (resolvedType === 'Organization' ? projectData.clientId : undefined),
-      individualId: projectData.individualId || (resolvedType === 'Individual' ? projectData.clientId : undefined),
       id: tempId,
       createdAt: now,
       updatedAt: now,
@@ -911,7 +785,7 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
 
     setProjects((prev) => [newProj, ...prev]);
 
-    createLiveProject(newProj).then((saved) => {
+    createLiveProject(projectData).then((saved) => {
       if (saved) {
         setProjects((prev) => prev.map((p) => (p.id === tempId ? saved : p)));
       }
@@ -993,21 +867,15 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
   const addPayment = (paymentData: Omit<Payment, 'id' | 'createdAt'>): Payment => {
     const tempId = `pay-${Date.now()}`;
     const now = new Date().toISOString();
-    const matchingClient = clients.find((c) => c.id === paymentData.clientId);
-    const resolvedType = paymentData.clientType || (matchingClient ? matchingClient.clientType : undefined);
-
     const newPayment: Payment = {
       ...paymentData,
-      clientType: resolvedType,
-      organizationId: paymentData.organizationId || (resolvedType === 'Organization' ? paymentData.clientId : undefined),
-      individualId: paymentData.individualId || (resolvedType === 'Individual' ? paymentData.clientId : undefined),
       id: tempId,
       createdAt: now,
     };
 
     setPayments((prev) => [newPayment, ...prev]);
 
-    createLivePayment(newPayment).then((saved) => {
+    createLivePayment(paymentData).then((saved) => {
       if (saved) {
         setPayments((prev) => prev.map((p) => (p.id === tempId ? saved : p)));
       }
@@ -1204,7 +1072,6 @@ export function CRMProvider({ children }: { children: React.ReactNode }) {
         generateLeadPayPalLink,
         convertLeadToClient,
         transferLeadToPartner,
-        logActivity,
         addLeadActivity,
         addClient,
         updateClient,
@@ -1247,3 +1114,4 @@ export function useCRM() {
   }
   return context;
 }
+

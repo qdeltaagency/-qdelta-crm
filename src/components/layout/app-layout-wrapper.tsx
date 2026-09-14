@@ -40,3 +40,4 @@ export function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
     </AgencyAuthProvider>
   );
 }
+

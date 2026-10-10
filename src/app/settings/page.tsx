@@ -23,7 +23,7 @@ export default function SettingsPage() {
   // Local Form State bound to CRM Settings
   const [formData, setFormData] = useState({
     companyName: settings.companyName || 'Qdelta Digital Studio',
-    agencyContactEmail: settings.agencyContactEmail || 'hello@qdelta.io',
+    agencyContactEmail: settings.agencyContactEmail || 'hello@qdelta.in',
     paypalHandle: settings.paypalHandle || 'qdeltastudio',
     defaultCurrency: settings.defaultCurrency || 'USD',
     geminiApiKey: settings.geminiApiKey || '',
@@ -38,7 +38,7 @@ export default function SettingsPage() {
     if (settings) {
       setFormData({
         companyName: settings.companyName || 'Qdelta Digital Studio',
-        agencyContactEmail: settings.agencyContactEmail || 'hello@qdelta.io',
+        agencyContactEmail: settings.agencyContactEmail || 'hello@qdelta.in',
         paypalHandle: settings.paypalHandle || 'qdeltastudio',
         defaultCurrency: settings.defaultCurrency || 'USD',
         geminiApiKey: settings.geminiApiKey || '',
@@ -184,7 +184,7 @@ export default function SettingsPage() {
                 type="email"
                 value={formData.agencyContactEmail}
                 onChange={(e) => handleFieldChange('agencyContactEmail', e.target.value)}
-                placeholder="e.g. hello@qdelta.io"
+                placeholder="e.g. hello@qdelta.in"
                 className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500"
               />
             </div>

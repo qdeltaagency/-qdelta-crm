@@ -4,7 +4,7 @@ export const INITIAL_SETTINGS: AgencySettings = {
   paypalHandle: 'qdeltastudio',
   defaultCurrency: 'USD',
   companyName: 'Qdelta Digital Studio',
-  agencyContactEmail: 'hello@qdelta.io',
+  agencyContactEmail: 'hello@qdelta.in',
   n8nLeadWebhookUrl: '',
   n8nPaymentWebhookUrl: '',
   n8nOnboardingWebhookUrl: '',
